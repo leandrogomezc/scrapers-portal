@@ -55,12 +55,24 @@
         <section class="card card-solcom" data-source="solcom">
           <h2>Solís Comercial</h2>
           <p class="card-desc">
-            Inventario de solcom-erp.vercel.app (SKU, marca, cantidad, condición).
+            Inventario de solcom-erp.vercel.app. Sube tu Excel maestro para actualizar
+            la columna DataShop con la cantidad real del scrape.
           </p>
+          <div class="update-section">
+            <label class="file-label" for="solcom-master-file">Archivo maestro (.xlsx) — SKU, DataShop</label>
+            <input type="file" id="solcom-master-file" accept=".xlsx,.csv" class="file-input" />
+            <div class="master-status" id="solcom-master-status">Sin archivo maestro subido.</div>
+          </div>
           <div class="actions">
             <button type="button" class="btn-primary run-btn">Descargar inventario</button>
+            <button type="button" class="btn-secondary generate-update-btn" disabled>
+              Generar actualización
+            </button>
             <a class="download-link hidden" href="/download/solcom/csv">
-              <button type="button" class="btn-secondary">Descargar CSV</button>
+              <button type="button" class="btn-secondary">Descargar CSV inventario</button>
+            </a>
+            <a class="update-download-link hidden" href="/download/solcom/update-csv">
+              <button type="button" class="btn-secondary">Descargar actualización</button>
             </a>
           </div>
           <div class="status">
@@ -81,7 +93,19 @@
       const generateUpdateBtn = beautyCard.querySelector(".generate-update-btn");
       const updateDownloadLink = beautyCard.querySelector(".update-download-link");
 
+      const solcomCard = document.querySelector('.card[data-source="solcom"]');
+      const solcomMasterFileInput = document.getElementById("solcom-master-file");
+      const solcomMasterStatusEl = document.getElementById("solcom-master-status");
+      const solcomGenerateUpdateBtn = solcomCard.querySelector(".generate-update-btn");
+      const solcomUpdateDownloadLink = solcomCard.querySelector(".update-download-link");
+
       let updateState = {
+        masterUploaded: false,
+        scrapeAvailable: false,
+        updateAvailable: false,
+      };
+
+      let solcomUpdateState = {
         masterUploaded: false,
         scrapeAvailable: false,
         updateAvailable: false,
@@ -213,6 +237,123 @@
 
       refreshUpdateStatus();
 
+      function showSolcomUpdateDownload(show) {
+        solcomUpdateDownloadLink.classList.toggle("hidden", !show);
+      }
+
+      function refreshSolcomGenerateButton() {
+        solcomGenerateUpdateBtn.disabled = !(
+          solcomUpdateState.masterUploaded && solcomUpdateState.scrapeAvailable
+        );
+      }
+
+      async function refreshSolcomUpdateStatus() {
+        try {
+          const res = await fetch("/api/solcom/update-status");
+          const data = await res.json();
+          solcomUpdateState.masterUploaded = Boolean(data.master_uploaded);
+          solcomUpdateState.scrapeAvailable = Boolean(data.scrape_available);
+          solcomUpdateState.updateAvailable = Boolean(data.update_available);
+
+          if (data.master_uploaded && data.master_rows != null) {
+            const fmt = data.master_format ? data.master_format.toUpperCase() : "XLSX";
+            solcomMasterStatusEl.textContent = `Archivo maestro (${fmt}) cargado: ${data.master_rows} filas.`;
+          } else {
+            solcomMasterStatusEl.textContent = "Sin archivo maestro subido.";
+          }
+
+          showSolcomUpdateDownload(solcomUpdateState.updateAvailable);
+          refreshSolcomGenerateButton();
+        } catch (err) {
+          solcomMasterStatusEl.textContent = "No se pudo consultar el estado del maestro.";
+        }
+      }
+
+      async function uploadSolcomMasterFile(file) {
+        const token = getToken();
+        const formData = new FormData();
+        formData.append("file", file);
+
+        solcomMasterStatusEl.textContent = "Subiendo archivo maestro...";
+
+        try {
+          const res = await fetch("/api/solcom/upload-master", {
+            method: "POST",
+            headers: { "X-Scrape-Token": token },
+            body: formData,
+          });
+          const data = await res.json().catch(() => ({}));
+
+          if (res.status === 401) {
+            solcomMasterStatusEl.textContent = "Token inválido. Verifica tu clave de acceso.";
+            return;
+          }
+
+          if (!res.ok) {
+            solcomMasterStatusEl.textContent = data.error || "Error al subir el archivo maestro.";
+            return;
+          }
+
+          const fmt = data.format ? data.format.toUpperCase() : "XLSX";
+          solcomMasterStatusEl.textContent = `Archivo maestro (${fmt}) cargado: ${data.master_rows} filas.`;
+          solcomUpdateState.masterUploaded = true;
+          refreshSolcomGenerateButton();
+        } catch (err) {
+          solcomMasterStatusEl.textContent = "Error de conexión al subir: " + err.message;
+        }
+      }
+
+      async function generateSolcomUpdate() {
+        const token = getToken();
+        solcomGenerateUpdateBtn.disabled = true;
+        setStatus(solcomCard, "running", "Generando archivo de actualización...", true);
+
+        try {
+          const res = await fetch("/api/solcom/generate-update", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Scrape-Token": token,
+            },
+            body: JSON.stringify({ token }),
+          });
+          const data = await res.json().catch(() => ({}));
+
+          if (res.status === 401) {
+            setStatus(solcomCard, "error", "Token inválido. Verifica tu clave de acceso.");
+            refreshSolcomGenerateButton();
+            return;
+          }
+
+          if (!res.ok) {
+            setStatus(solcomCard, "error", data.error || "No se pudo generar la actualización.");
+            refreshSolcomGenerateButton();
+            return;
+          }
+
+          solcomUpdateState.updateAvailable = true;
+          showSolcomUpdateDownload(true);
+          setStatus(
+            solcomCard,
+            "done",
+            `${data.total} SKUs · ${data.with_stock} con stock · ${data.zero_stock} en 0`
+          );
+        } catch (err) {
+          setStatus(solcomCard, "error", "Error de conexión: " + err.message);
+        } finally {
+          refreshSolcomGenerateButton();
+        }
+      }
+
+      solcomMasterFileInput.addEventListener("change", () => {
+        const file = solcomMasterFileInput.files[0];
+        if (file) uploadSolcomMasterFile(file);
+      });
+
+      solcomGenerateUpdateBtn.addEventListener("click", generateSolcomUpdate);
+
+      refreshSolcomUpdateStatus();
+
       function escapeHtml(text) {
         const div = document.createElement("div");
         div.textContent = text;
@@ -269,6 +410,9 @@
             if (source === "beautydepot") {
               updateState.scrapeAvailable = true;
               refreshGenerateButton();
+            } else if (source === "solcom") {
+              solcomUpdateState.scrapeAvailable = true;
+              refreshSolcomGenerateButton();
             }
           } else if (data.status === "error") {
             setStatus(card, "error", data.message || "Error desconocido");
@@ -279,6 +423,9 @@
             if (source === "beautydepot" && data.output_path != null) {
               updateState.scrapeAvailable = true;
               refreshGenerateButton();
+            } else if (source === "solcom" && data.output_path != null) {
+              solcomUpdateState.scrapeAvailable = true;
+              refreshSolcomGenerateButton();
             }
           }
         } catch (err) {

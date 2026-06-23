@@ -10,14 +10,21 @@ from pathlib import Path
 from flask import Flask, jsonify, request, send_file, send_from_directory
 
 from beautydepot_update import (
-    MasterFileError,
-    find_master_path,
-    find_update_path,
-    generate_update,
-    get_update_status,
-    read_master_rows,
-    save_master_upload,
-    validate_master_columns,
+    find_master_path as find_beauty_master_path,
+    find_update_path as find_beauty_update_path,
+    generate_update as generate_beauty_update,
+    get_update_status as get_beauty_update_status,
+    save_master_upload as save_beauty_master_upload,
+    validate_beautydepot_master_columns,
+)
+from master_file_io import MasterFileError, read_master_rows
+from solcom_update import (
+    find_master_path as find_solcom_master_path,
+    find_update_path as find_solcom_update_path,
+    generate_update as generate_solcom_update,
+    get_update_status as get_solcom_update_status,
+    save_master_upload as save_solcom_master_upload,
+    validate_solcom_master_columns,
 )
 from scrape_beautydepot import OUTPUT_PATH as BEAUTY_OUTPUT
 from scrape_beautydepot import run_scrape as beauty_run_scrape
@@ -158,9 +165,61 @@ def api_status(source: str):
     return jsonify(_get_job(source))
 
 
+def _upload_master_file(upload, validate_columns, save_upload):
+    if not upload or not upload.filename:
+        return None, (jsonify({"error": "Debes subir un archivo maestro (.xlsx o .csv)."}), 400)
+
+    filename = upload.filename.lower()
+    if not (filename.endswith(".xlsx") or filename.endswith(".csv")):
+        return None, (jsonify({"error": "El archivo debe ser .xlsx o .csv."}), 400)
+
+    suffix = ".xlsx" if filename.endswith(".xlsx") else ".csv"
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+        upload.save(tmp.name)
+        temp_path = Path(tmp.name)
+
+    try:
+        fieldnames, rows = read_master_rows(temp_path)
+        validate_columns(fieldnames)
+        master_path = save_upload(temp_path, upload.filename)
+    except MasterFileError as exc:
+        temp_path.unlink(missing_ok=True)
+        return None, (jsonify({"error": str(exc)}), 400)
+    except (OSError, ValueError) as exc:
+        temp_path.unlink(missing_ok=True)
+        return None, (jsonify({"error": f"Archivo inválido: {exc}"}), 400)
+
+    return (
+        {
+            "status": "ok",
+            "master_rows": len(rows),
+            "columns": fieldnames,
+            "format": master_path.suffix.lstrip(".").lower(),
+        },
+        None,
+    )
+
+
+def _send_update_file(update_path: Path | None, download_basename: str):
+    if not update_path:
+        return jsonify({"error": "No hay archivo de actualización. Genera uno primero."}), 404
+
+    if update_path.suffix.lower() == ".xlsx":
+        mimetype = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    else:
+        mimetype = "text/csv"
+
+    return send_file(
+        update_path,
+        as_attachment=True,
+        download_name=f"{download_basename}{update_path.suffix}",
+        mimetype=mimetype,
+    )
+
+
 @app.get("/api/beautydepot/update-status")
 def beautydepot_update_status():
-    return jsonify(get_update_status())
+    return jsonify(get_beauty_update_status())
 
 
 @app.post("/api/beautydepot/upload-master")
@@ -168,39 +227,14 @@ def beautydepot_upload_master():
     if not _is_authorized():
         return jsonify({"error": "Token inválido o faltante"}), 401
 
-    upload = request.files.get("file")
-    if not upload or not upload.filename:
-        return jsonify({"error": "Debes subir un archivo maestro (.xlsx o .csv)."}), 400
-
-    filename = upload.filename.lower()
-    if not (filename.endswith(".xlsx") or filename.endswith(".csv")):
-        return jsonify({"error": "El archivo debe ser .xlsx o .csv."}), 400
-
-    suffix = ".xlsx" if filename.endswith(".xlsx") else ".csv"
-    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-        upload.save(tmp.name)
-        temp_path = Path(tmp.name)
-
-    master_path = None
-    try:
-        fieldnames, rows = read_master_rows(temp_path)
-        validate_master_columns(fieldnames)
-        master_path = save_master_upload(temp_path, upload.filename)
-    except MasterFileError as exc:
-        temp_path.unlink(missing_ok=True)
-        return jsonify({"error": str(exc)}), 400
-    except (OSError, ValueError) as exc:
-        temp_path.unlink(missing_ok=True)
-        return jsonify({"error": f"Archivo inválido: {exc}"}), 400
-
-    return jsonify(
-        {
-            "status": "ok",
-            "master_rows": len(rows),
-            "columns": fieldnames,
-            "format": master_path.suffix.lstrip(".").lower(),
-        }
+    payload, error = _upload_master_file(
+        request.files.get("file"),
+        validate_beautydepot_master_columns,
+        save_beauty_master_upload,
     )
+    if error:
+        return error
+    return jsonify(payload)
 
 
 @app.post("/api/beautydepot/generate-update")
@@ -208,14 +242,14 @@ def beautydepot_generate_update():
     if not _is_authorized():
         return jsonify({"error": "Token inválido o faltante"}), 401
 
-    if not find_master_path():
+    if not find_beauty_master_path():
         return jsonify({"error": "Sube primero el archivo maestro."}), 400
 
     if not BEAUTY_OUTPUT.exists():
         return jsonify({"error": "Ejecuta primero el scrape de Beauty Depot."}), 400
 
     try:
-        result = generate_update()
+        result = generate_beauty_update()
     except MasterFileError as exc:
         return jsonify({"error": str(exc)}), 400
     except FileNotFoundError as exc:
@@ -228,21 +262,55 @@ def beautydepot_generate_update():
 
 @app.get("/download/beautydepot/update-csv")
 def download_beautydepot_update_csv():
-    update_path = find_update_path()
-    if not update_path:
-        return jsonify({"error": "No hay archivo de actualización. Genera uno primero."}), 404
+    return _send_update_file(find_beauty_update_path(), "beautydepot_actualizacion")
 
-    if update_path.suffix.lower() == ".xlsx":
-        mimetype = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    else:
-        mimetype = "text/csv"
 
-    return send_file(
-        update_path,
-        as_attachment=True,
-        download_name=f"beautydepot_actualizacion{update_path.suffix}",
-        mimetype=mimetype,
+@app.get("/api/solcom/update-status")
+def solcom_update_status():
+    return jsonify(get_solcom_update_status())
+
+
+@app.post("/api/solcom/upload-master")
+def solcom_upload_master():
+    if not _is_authorized():
+        return jsonify({"error": "Token inválido o faltante"}), 401
+
+    payload, error = _upload_master_file(
+        request.files.get("file"),
+        validate_solcom_master_columns,
+        save_solcom_master_upload,
     )
+    if error:
+        return error
+    return jsonify(payload)
+
+
+@app.post("/api/solcom/generate-update")
+def solcom_generate_update():
+    if not _is_authorized():
+        return jsonify({"error": "Token inválido o faltante"}), 401
+
+    if not find_solcom_master_path():
+        return jsonify({"error": "Sube primero el archivo maestro."}), 400
+
+    if not SOLCOM_OUTPUT.exists():
+        return jsonify({"error": "Ejecuta primero el scrape de Solís Comercial."}), 400
+
+    try:
+        result = generate_solcom_update()
+    except MasterFileError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except FileNotFoundError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except OSError as exc:
+        return jsonify({"error": str(exc)}), 500
+
+    return jsonify({"status": "ok", **result})
+
+
+@app.get("/download/solcom/update-csv")
+def download_solcom_update_csv():
+    return _send_update_file(find_solcom_update_path(), "solcom_actualizacion")
 
 
 @app.get("/download/<source>/csv")

@@ -52,6 +52,7 @@ Abre http://127.0.0.1:5050
 - `output/beautydepot_productos.csv` — ~2045 productos (catálogo completo)
 - `output/beautydepot_actualizacion.xlsx` — actualización parcial desde archivo maestro
 - `output/inventario.csv` — ~516 productos (SKU, nombre, marca, cantidad, condición)
+- `output/solcom_actualizacion.xlsx` — actualización parcial DataShop desde archivo maestro
 
 ## Actualización de inventario Beauty Depot
 
@@ -71,6 +72,23 @@ Reglas por fila del maestro (comparación por `SKU`):
 
 **Render Free:** el archivo maestro subido se guarda en disco efímero; vuelve a subirlo tras cada redeploy.
 
+## Actualización de inventario Solís Comercial
+
+Flujo para generar un archivo que **solo modifica** la columna `DataShop`:
+
+1. Sube tu **archivo maestro** (`.xlsx` recomendado, también `.csv`) con columnas obligatorias: `SKU`, `DataShop`.
+2. Ejecuta el scrape de Solís Comercial.
+3. Pulsa **Generar actualización**.
+4. Descarga `solcom_actualizacion.xlsx` e impórtalo en tu sistema.
+
+Reglas por fila del maestro (comparación por `SKU`):
+
+| Columna | Si el SKU está en el scrape | Si no está en el scrape |
+|---------|----------------------------|-------------------------|
+| `DataShop` | Cantidad real del inventario Solcom | `0` |
+
+Si un SKU aparece más de una vez en el scrape, se suman las cantidades.
+
 ## API
 
 | Método | Ruta |
@@ -80,9 +98,13 @@ Reglas por fila del maestro (comparación por `SKU`):
 | POST | `/api/beautydepot/generate-update` |
 | GET | `/api/beautydepot/update-status` |
 | POST | `/api/solcom/run` |
+| POST | `/api/solcom/upload-master` |
+| POST | `/api/solcom/generate-update` |
+| GET | `/api/solcom/update-status` |
 | GET | `/api/<source>/status` |
 | GET | `/download/<source>/csv` |
 | GET | `/download/beautydepot/update-csv` |
+| GET | `/download/solcom/update-csv` |
 
 ## CLI
 

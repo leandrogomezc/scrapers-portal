@@ -1,9 +1,8 @@
-"""Generate Beauty Depot inventory update file from master catalog + scrape."""
+"""Generate Solís Comercial inventory update file from master catalog + scrape."""
 
 from __future__ import annotations
 
 import csv
-import re
 from pathlib import Path
 
 from master_file_io import (
@@ -15,21 +14,17 @@ from master_file_io import (
     validate_master_columns,
     write_update_rows,
 )
-from scrape_beautydepot import OUTPUT_PATH as SCRAPE_OUTPUT_PATH
+from scrape_inventory import OUTPUT_PATH as SCRAPE_OUTPUT_PATH
 
-STORE = MasterFileStore("beautydepot_master", "beautydepot_actualizacion")
+STORE = MasterFileStore("solcom_master", "solcom_actualizacion")
 
 MASTER_SKU_COL = "SKU"
-UPDATE_PRICE_COL = "Precio"
-UPDATE_STOCK_COL = "Beauty Depot"
+UPDATE_STOCK_COL = "DataShop"
 
-SCRAPE_SKU_COL = "Código de SKU"
-SCRAPE_PRICE_COL = "Precio de Venta"
+SCRAPE_SKU_COL = "SKU"
+SCRAPE_QTY_COL = "Cantidad"
 
-STOCK_IF_FOUND = 10
-STOCK_IF_MISSING = 0
-
-REQUIRED_MASTER_COLUMNS = (MASTER_SKU_COL, UPDATE_PRICE_COL, UPDATE_STOCK_COL)
+REQUIRED_MASTER_COLUMNS = (MASTER_SKU_COL, UPDATE_STOCK_COL)
 
 
 def find_master_path() -> Path | None:
@@ -44,46 +39,31 @@ def save_master_upload(source_path: Path, original_filename: str) -> Path:
     return STORE.save_master_upload(source_path, original_filename)
 
 
-def validate_beautydepot_master_columns(fieldnames: list[str]) -> None:
+def validate_solcom_master_columns(fieldnames: list[str]) -> None:
     validate_master_columns(fieldnames, REQUIRED_MASTER_COLUMNS)
 
 
-def load_scrape_index(scrape_path: Path | None = None) -> dict[str, str]:
+def _parse_quantity(value: str) -> int:
+    text = (value or "").strip()
+    if not text:
+        return 0
+    try:
+        return int(float(text))
+    except ValueError:
+        return 0
+
+
+def load_scrape_index(scrape_path: Path | None = None) -> dict[str, int]:
     path = scrape_path or SCRAPE_OUTPUT_PATH
     _, rows = read_csv_rows(path)
-    index: dict[str, str] = {}
+    index: dict[str, int] = {}
     for row in rows:
         sku = normalize_sku(row.get(SCRAPE_SKU_COL, ""))
         if not sku:
             continue
-        index[sku] = row.get(SCRAPE_PRICE_COL, "")
+        qty = _parse_quantity(row.get(SCRAPE_QTY_COL, ""))
+        index[sku] = index.get(sku, 0) + qty
     return index
-
-
-def _master_uses_currency_prefix(sample_prices: list[str]) -> bool:
-    non_empty = [p.strip() for p in sample_prices if p.strip()]
-    if not non_empty:
-        return True
-    prefixed = sum(1 for p in non_empty if re.match(r"^[A-Za-z$]", p))
-    return prefixed >= len(non_empty) / 2
-
-
-def normalize_price_for_export(scraped_price: str, master_prices: list[str]) -> str:
-    scraped = (scraped_price or "").strip()
-    if not scraped:
-        return ""
-
-    if _master_uses_currency_prefix(master_prices):
-        return scraped
-
-    numeric = re.sub(r"[^\d.]", "", scraped.replace(",", ""))
-    if not numeric:
-        return scraped
-    try:
-        amount = float(numeric)
-    except ValueError:
-        return scraped
-    return f"{amount:.2f}"
 
 
 def generate_update(
@@ -98,33 +78,34 @@ def generate_update(
     target = output_path or STORE.update_path_for_ext(master_file.suffix.lower())
 
     fieldnames, master_rows = read_master_rows(master_file)
-    validate_beautydepot_master_columns(fieldnames)
+    validate_solcom_master_columns(fieldnames)
 
     scrape_index = load_scrape_index(scrape_path)
     if not scrape_index:
         raise FileNotFoundError(
-            "El scrape de Beauty Depot está vacío o no existe. Ejecuta el scrape primero."
+            "El scrape de Solís Comercial está vacío o no existe. Ejecuta el scrape primero."
         )
 
-    master_prices = [row.get(UPDATE_PRICE_COL, "") for row in master_rows]
     updated_rows: list[dict[str, str]] = []
     matched = 0
-    stock_10 = 0
-    stock_0 = 0
+    with_stock = 0
+    zero_stock = 0
 
     for row in master_rows:
         updated = dict(row)
         sku = normalize_sku(row.get(MASTER_SKU_COL, ""))
-        scraped_price = scrape_index.get(sku)
+        scraped_qty = scrape_index.get(sku)
 
-        if scraped_price is not None:
+        if scraped_qty is not None:
             matched += 1
-            updated[UPDATE_PRICE_COL] = normalize_price_for_export(scraped_price, master_prices)
-            updated[UPDATE_STOCK_COL] = str(STOCK_IF_FOUND)
-            stock_10 += 1
+            updated[UPDATE_STOCK_COL] = str(scraped_qty)
+            if scraped_qty > 0:
+                with_stock += 1
+            else:
+                zero_stock += 1
         else:
-            updated[UPDATE_STOCK_COL] = str(STOCK_IF_MISSING)
-            stock_0 += 1
+            updated[UPDATE_STOCK_COL] = "0"
+            zero_stock += 1
 
         updated_rows.append(updated)
 
@@ -134,8 +115,8 @@ def generate_update(
     return {
         "total": len(updated_rows),
         "matched": matched,
-        "stock_10": stock_10,
-        "stock_0": stock_0,
+        "with_stock": with_stock,
+        "zero_stock": zero_stock,
         "output_path": str(target),
         "output_format": target.suffix.lstrip(".").lower(),
     }
