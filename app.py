@@ -7,7 +7,7 @@ from collections.abc import Callable
 from datetime import datetime, timezone
 from pathlib import Path
 
-from flask import Flask, jsonify, request, send_file, send_from_directory
+from flask import Flask, jsonify, make_response, request, send_file, send_from_directory
 
 from beautydepot_update import (
     find_master_path as find_beauty_master_path,
@@ -146,7 +146,9 @@ def _run_job(source: str) -> None:
 
 @app.get("/")
 def index():
-    return send_from_directory(app.static_folder, "index.html")
+    response = make_response(send_from_directory(app.static_folder, "index.html"))
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    return response
 
 
 @app.post("/api/<source>/run")
