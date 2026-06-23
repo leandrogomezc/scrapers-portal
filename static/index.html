@@ -11,7 +11,7 @@
       <header class="portal-header">
         <h1>Portal de Scrapers</h1>
         <p class="subtitle">
-          Descarga catálogos de Beauty Depot, Molvu y inventario de Solís Comercial.
+          Descarga catálogos de Beauty Depot, Pinturas Biotech, Molvu e inventario de Solís Comercial.
         </p>
         <label for="token">Token de acceso (opcional)</label>
         <input
@@ -44,6 +44,24 @@
             </a>
             <a class="update-download-link hidden" href="/download/beautydepot/update-csv">
               <button type="button" class="btn-secondary">Descargar actualización</button>
+            </a>
+          </div>
+          <div class="status">
+            <div class="status-label">Estado</div>
+            <div class="status-message">Listo para ejecutar.</div>
+          </div>
+        </section>
+
+        <section class="card card-biotech" data-source="biotech">
+          <h2>Pinturas Biotech</h2>
+          <p class="card-desc">
+            Catálogo completo de pinturasbiotech.com (Odoo). SKU, nombre, descripción,
+            imagen y precio de venta.
+          </p>
+          <div class="actions">
+            <button type="button" class="btn-primary run-btn">Ejecutar scrape</button>
+            <a class="download-link hidden" href="/download/biotech/csv">
+              <button type="button" class="btn-secondary">Descargar CSV catálogo</button>
             </a>
           </div>
           <div class="status">

@@ -81,6 +81,10 @@ input[type="password"]:focus {
   border-top-color: #7c3aed;
 }
 
+.card-biotech {
+  border-top-color: #c2410c;
+}
+
 .card-molvu {
   border-top-color: #0d9488;
 }
@@ -165,6 +169,15 @@ button:not(:disabled):active {
   background: #6d28d9;
 }
 
+.card-biotech .btn-primary {
+  background: #c2410c;
+  color: #fff;
+}
+
+.card-biotech .btn-primary:not(:disabled):hover {
+  background: #9a3412;
+}
+
 .card-molvu .btn-primary {
   background: #0d9488;
   color: #fff;
@@ -243,6 +256,11 @@ a:not(.hidden) {
 .card-beautydepot .spinner {
   border-color: #c4b5fd;
   border-top-color: #7c3aed;
+}
+
+.card-biotech .spinner {
+  border-color: #fdba74;
+  border-top-color: #c2410c;
 }
 
 .card-molvu .spinner {
