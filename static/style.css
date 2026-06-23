@@ -98,6 +98,34 @@ input[type="password"]:focus {
   line-height: 1.5;
 }
 
+.update-section {
+  margin-bottom: 16px;
+  padding: 14px;
+  border-radius: 8px;
+  background: #faf5ff;
+  border: 1px solid #e9d5ff;
+}
+
+.file-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #6b21a8;
+}
+
+.file-input {
+  width: 100%;
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+}
+
+.master-status {
+  font-size: 0.85rem;
+  color: #64748b;
+  line-height: 1.4;
+}
+
 .actions {
   display: flex;
   flex-direction: column;

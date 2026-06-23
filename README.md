@@ -49,17 +49,40 @@ Abre http://127.0.0.1:5050
 
 ## Salida CSV
 
-- `output/beautydepot_productos.csv` — ~2045 productos
+- `output/beautydepot_productos.csv` — ~2045 productos (catálogo completo)
+- `output/beautydepot_actualizacion.csv` — actualización parcial desde CSV maestro
 - `output/inventario.csv` — ~516 productos (SKU, nombre, marca, cantidad, condición)
+
+## Actualización de inventario Beauty Depot
+
+Flujo para generar un CSV que **solo modifica** `Precio` e inventario en la columna `Beauty Depot`:
+
+1. Sube tu **CSV maestro** con columnas obligatorias: `SKU`, `Precio`, `Beauty Depot` (puede incluir otras columnas).
+2. Ejecuta el scrape de Beauty Depot.
+3. Pulsa **Generar actualización**.
+4. Descarga `beautydepot_actualizacion.csv` e impórtalo en tu sistema.
+
+Reglas por fila del maestro (comparación por `SKU`):
+
+| Columna | Si el SKU está en el scrape | Si no está en el scrape |
+|---------|----------------------------|-------------------------|
+| `Precio` | Precio de venta al público del scrape | Sin cambio (valor original) |
+| `Beauty Depot` | `10` | `0` |
+
+**Render Free:** el CSV maestro subido se guarda en disco efímero; vuelve a subirlo tras cada redeploy.
 
 ## API
 
 | Método | Ruta |
 |--------|------|
 | POST | `/api/beautydepot/run` |
+| POST | `/api/beautydepot/upload-master` |
+| POST | `/api/beautydepot/generate-update` |
+| GET | `/api/beautydepot/update-status` |
 | POST | `/api/solcom/run` |
 | GET | `/api/<source>/status` |
 | GET | `/download/<source>/csv` |
+| GET | `/download/beautydepot/update-csv` |
 
 ## CLI
 

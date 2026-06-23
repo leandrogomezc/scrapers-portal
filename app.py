@@ -1,5 +1,6 @@
 """Unified Flask portal for Beauty Depot and Solís Comercial scrapers."""
 
+import csv
 import os
 import threading
 from collections.abc import Callable
@@ -8,6 +9,14 @@ from pathlib import Path
 
 from flask import Flask, jsonify, request, send_file, send_from_directory
 
+from beautydepot_update import (
+    MASTER_PATH,
+    UPDATE_OUTPUT_PATH,
+    MasterCsvError,
+    generate_update,
+    get_update_status,
+    validate_master_columns,
+)
 from scrape_beautydepot import OUTPUT_PATH as BEAUTY_OUTPUT
 from scrape_beautydepot import run_scrape as beauty_run_scrape
 from scrape_inventory import OUTPUT_PATH as SOLCOM_OUTPUT
@@ -145,6 +154,84 @@ def api_status(source: str):
     if not _get_scraper(source):
         return jsonify({"error": "Fuente desconocida"}), 404
     return jsonify(_get_job(source))
+
+
+@app.get("/api/beautydepot/update-status")
+def beautydepot_update_status():
+    return jsonify(get_update_status())
+
+
+@app.post("/api/beautydepot/upload-master")
+def beautydepot_upload_master():
+    if not _is_authorized():
+        return jsonify({"error": "Token inválido o faltante"}), 401
+
+    upload = request.files.get("file")
+    if not upload or not upload.filename:
+        return jsonify({"error": "Debes subir un archivo CSV."}), 400
+
+    if not upload.filename.lower().endswith(".csv"):
+        return jsonify({"error": "El archivo debe ser un CSV."}), 400
+
+    MASTER_PATH.parent.mkdir(parents=True, exist_ok=True)
+    upload.save(MASTER_PATH)
+
+    try:
+        with MASTER_PATH.open(encoding="utf-8-sig", newline="") as handle:
+            reader = csv.DictReader(handle)
+            fieldnames = list(reader.fieldnames or [])
+            rows = list(reader)
+        validate_master_columns(fieldnames)
+    except MasterCsvError as exc:
+        MASTER_PATH.unlink(missing_ok=True)
+        return jsonify({"error": str(exc)}), 400
+    except (OSError, csv.Error) as exc:
+        MASTER_PATH.unlink(missing_ok=True)
+        return jsonify({"error": f"CSV inválido: {exc}"}), 400
+
+    return jsonify(
+        {
+            "status": "ok",
+            "master_rows": len(rows),
+            "columns": fieldnames,
+        }
+    )
+
+
+@app.post("/api/beautydepot/generate-update")
+def beautydepot_generate_update():
+    if not _is_authorized():
+        return jsonify({"error": "Token inválido o faltante"}), 401
+
+    if not MASTER_PATH.exists():
+        return jsonify({"error": "Sube primero el CSV maestro."}), 400
+
+    if not BEAUTY_OUTPUT.exists():
+        return jsonify({"error": "Ejecuta primero el scrape de Beauty Depot."}), 400
+
+    try:
+        result = generate_update()
+    except MasterCsvError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except FileNotFoundError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except OSError as exc:
+        return jsonify({"error": str(exc)}), 500
+
+    return jsonify({"status": "ok", **result})
+
+
+@app.get("/download/beautydepot/update-csv")
+def download_beautydepot_update_csv():
+    if not UPDATE_OUTPUT_PATH.exists():
+        return jsonify({"error": "No hay archivo de actualización. Genera uno primero."}), 404
+
+    return send_file(
+        UPDATE_OUTPUT_PATH,
+        as_attachment=True,
+        download_name="beautydepot_actualizacion.csv",
+        mimetype="text/csv",
+    )
 
 
 @app.get("/download/<source>/csv")

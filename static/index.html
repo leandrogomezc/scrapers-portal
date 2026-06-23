@@ -26,12 +26,24 @@
         <section class="card card-beautydepot" data-source="beautydepot">
           <h2>Beauty Depot</h2>
           <p class="card-desc">
-            Catálogo completo de beautydepot.com.gt (~2045 productos).
+            Catálogo completo de beautydepot.com.gt (~2045 productos). Sube tu CSV
+            maestro para generar actualización de Precio e inventario Beauty Depot.
           </p>
+          <div class="update-section">
+            <label class="file-label" for="master-file">CSV maestro (SKU, Precio, Beauty Depot)</label>
+            <input type="file" id="master-file" accept=".csv" class="file-input" />
+            <div class="master-status" id="master-status">Sin CSV maestro subido.</div>
+          </div>
           <div class="actions">
             <button type="button" class="btn-primary run-btn">Ejecutar scrape</button>
+            <button type="button" class="btn-secondary generate-update-btn" disabled>
+              Generar actualización
+            </button>
             <a class="download-link hidden" href="/download/beautydepot/csv">
-              <button type="button" class="btn-secondary">Descargar CSV</button>
+              <button type="button" class="btn-secondary">Descargar CSV catálogo</button>
+            </a>
+            <a class="update-download-link hidden" href="/download/beautydepot/update-csv">
+              <button type="button" class="btn-secondary">Descargar actualización</button>
             </a>
           </div>
           <div class="status">
@@ -63,6 +75,17 @@
       const TOKEN_KEY = "portal_scrape_token";
       const tokenInput = document.getElementById("token");
       const pollTimers = {};
+      const beautyCard = document.querySelector('.card[data-source="beautydepot"]');
+      const masterFileInput = document.getElementById("master-file");
+      const masterStatusEl = document.getElementById("master-status");
+      const generateUpdateBtn = beautyCard.querySelector(".generate-update-btn");
+      const updateDownloadLink = beautyCard.querySelector(".update-download-link");
+
+      let updateState = {
+        masterUploaded: false,
+        scrapeAvailable: false,
+        updateAvailable: false,
+      };
 
       const savedToken = sessionStorage.getItem(TOKEN_KEY);
       if (savedToken) tokenInput.value = savedToken;
@@ -72,6 +95,121 @@
         if (token) sessionStorage.setItem(TOKEN_KEY, token);
         return token;
       }
+
+      function showUpdateDownload(show) {
+        updateDownloadLink.classList.toggle("hidden", !show);
+      }
+
+      function refreshGenerateButton() {
+        generateUpdateBtn.disabled = !(
+          updateState.masterUploaded && updateState.scrapeAvailable
+        );
+      }
+
+      async function refreshUpdateStatus() {
+        try {
+          const res = await fetch("/api/beautydepot/update-status");
+          const data = await res.json();
+          updateState.masterUploaded = Boolean(data.master_uploaded);
+          updateState.scrapeAvailable = Boolean(data.scrape_available);
+          updateState.updateAvailable = Boolean(data.update_available);
+
+          if (data.master_uploaded && data.master_rows != null) {
+            masterStatusEl.textContent = `CSV maestro cargado: ${data.master_rows} filas.`;
+          } else {
+            masterStatusEl.textContent = "Sin CSV maestro subido.";
+          }
+
+          showUpdateDownload(updateState.updateAvailable);
+          refreshGenerateButton();
+        } catch (err) {
+          masterStatusEl.textContent = "No se pudo consultar el estado del maestro.";
+        }
+      }
+
+      async function uploadMasterFile(file) {
+        const token = getToken();
+        const formData = new FormData();
+        formData.append("file", file);
+
+        masterStatusEl.textContent = "Subiendo CSV maestro...";
+
+        try {
+          const res = await fetch("/api/beautydepot/upload-master", {
+            method: "POST",
+            headers: { "X-Scrape-Token": token },
+            body: formData,
+          });
+          const data = await res.json().catch(() => ({}));
+
+          if (res.status === 401) {
+            masterStatusEl.textContent = "Token inválido. Verifica tu clave de acceso.";
+            return;
+          }
+
+          if (!res.ok) {
+            masterStatusEl.textContent = data.error || "Error al subir el CSV maestro.";
+            return;
+          }
+
+          masterStatusEl.textContent = `CSV maestro cargado: ${data.master_rows} filas.`;
+          updateState.masterUploaded = true;
+          refreshGenerateButton();
+        } catch (err) {
+          masterStatusEl.textContent = "Error de conexión al subir: " + err.message;
+        }
+      }
+
+      async function generateUpdate() {
+        const token = getToken();
+        generateUpdateBtn.disabled = true;
+        setStatus(beautyCard, "running", "Generando archivo de actualización...", true);
+
+        try {
+          const res = await fetch("/api/beautydepot/generate-update", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Scrape-Token": token,
+            },
+            body: JSON.stringify({ token }),
+          });
+          const data = await res.json().catch(() => ({}));
+
+          if (res.status === 401) {
+            setStatus(beautyCard, "error", "Token inválido. Verifica tu clave de acceso.");
+            refreshGenerateButton();
+            return;
+          }
+
+          if (!res.ok) {
+            setStatus(beautyCard, "error", data.error || "No se pudo generar la actualización.");
+            refreshGenerateButton();
+            return;
+          }
+
+          updateState.updateAvailable = true;
+          showUpdateDownload(true);
+          setStatus(
+            beautyCard,
+            "done",
+            `${data.total} SKUs en maestro · ${data.stock_10} con stock 10 · ${data.stock_0} con stock 0`
+          );
+        } catch (err) {
+          setStatus(beautyCard, "error", "Error de conexión: " + err.message);
+        } finally {
+          refreshGenerateButton();
+        }
+      }
+
+      masterFileInput.addEventListener("change", () => {
+        const file = masterFileInput.files[0];
+        if (file) uploadMasterFile(file);
+      });
+
+      generateUpdateBtn.addEventListener("click", generateUpdate);
+
+      refreshUpdateStatus();
 
       function escapeHtml(text) {
         const div = document.createElement("div");
@@ -126,12 +264,20 @@
           if (data.status === "done") {
             setStatus(card, "done", data.message || `Completado: ${data.rows} productos`);
             showDownload(card, true);
+            if (source === "beautydepot") {
+              updateState.scrapeAvailable = true;
+              refreshGenerateButton();
+            }
           } else if (data.status === "error") {
             setStatus(card, "error", data.message || "Error desconocido");
             showDownload(card, false);
           } else {
             setStatus(card, "idle", "Listo para ejecutar.");
             showDownload(card, data.output_path != null);
+            if (source === "beautydepot" && data.output_path != null) {
+              updateState.scrapeAvailable = true;
+              refreshGenerateButton();
+            }
           }
         } catch (err) {
           clearInterval(pollTimers[source]);
