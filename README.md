@@ -1,6 +1,6 @@
 # Portal de Scrapers
 
-Web unificada para descargar catálogos de **Beauty Depot** e inventario de **Solís Comercial** (Solcom ERP).
+Web unificada para descargar catálogos de **Beauty Depot**, **Molvu** e inventario de **Solís Comercial** (Solcom ERP).
 
 ## Setup local
 
@@ -50,6 +50,7 @@ Abre http://127.0.0.1:5050
 ## Salida CSV
 
 - `output/beautydepot_productos.csv` — ~2045 productos (catálogo completo)
+- `output/molvu_productos.csv` — catálogo molvu.com.gt (Shopify)
 - `output/beautydepot_actualizacion.xlsx` — actualización parcial desde archivo maestro
 - `output/inventario.csv` — ~516 productos (SKU, nombre, marca, cantidad, condición)
 - `output/solcom_actualizacion.xlsx` — actualización parcial DataShop desde archivo maestro
@@ -94,6 +95,7 @@ Si un SKU aparece más de una vez en el scrape, se suman las cantidades.
 | Método | Ruta |
 |--------|------|
 | POST | `/api/beautydepot/run` |
+| POST | `/api/molvu/run` |
 | POST | `/api/beautydepot/upload-master` |
 | POST | `/api/beautydepot/generate-update` |
 | GET | `/api/beautydepot/update-status` |
@@ -111,4 +113,5 @@ Si un SKU aparece más de una vez en el scrape, se suman las cantidades.
 ```powershell
 python scrape_inventory.py
 python scrape_beautydepot.py
+python scrape_molvu.py
 ```

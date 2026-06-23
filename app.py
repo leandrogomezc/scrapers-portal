@@ -1,4 +1,4 @@
-"""Unified Flask portal for Beauty Depot and Solís Comercial scrapers."""
+"""Unified Flask portal for Beauty Depot, Molvu and Solís Comercial scrapers."""
 
 import os
 import tempfile
@@ -30,6 +30,8 @@ from scrape_beautydepot import OUTPUT_PATH as BEAUTY_OUTPUT
 from scrape_beautydepot import run_scrape as beauty_run_scrape
 from scrape_inventory import OUTPUT_PATH as SOLCOM_OUTPUT
 from scrape_inventory import run_scrape as solcom_run_scrape
+from scrape_molvu import OUTPUT_PATH as MOLVU_OUTPUT
+from scrape_molvu import run_scrape as molvu_run_scrape
 
 app = Flask(__name__, static_folder="static", static_url_path="/static")
 
@@ -46,6 +48,7 @@ _idle_job = {
 }
 _jobs: dict[str, dict] = {
     "beautydepot": dict(_idle_job),
+    "molvu": dict(_idle_job),
     "solcom": dict(_idle_job),
 }
 
@@ -56,6 +59,13 @@ SCRAPERS: dict[str, dict] = {
         "output_path": BEAUTY_OUTPUT,
         "download_name": "beautydepot_productos.csv",
         "start_message": "Iniciando scrape de Beauty Depot...",
+    },
+    "molvu": {
+        "label": "Molvu",
+        "run": molvu_run_scrape,
+        "output_path": MOLVU_OUTPUT,
+        "download_name": "molvu_productos.csv",
+        "start_message": "Iniciando scrape de Molvu...",
     },
     "solcom": {
         "label": "Solís Comercial",
@@ -338,7 +348,7 @@ if __name__ == "__main__":
     url = f"http://127.0.0.1:{port}"
     print("=" * 50)
     print("  Portal de Scrapers")
-    print("  Beauty Depot + Solís Comercial")
+    print("  Beauty Depot + Molvu + Solís Comercial")
     print(f"  Abre en tu navegador: {url}")
     print("  Presiona Ctrl+C para detener el servidor")
     print("=" * 50)

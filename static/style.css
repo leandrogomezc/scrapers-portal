@@ -65,7 +65,7 @@ input[type="password"]:focus {
 
 .portal-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 24px;
 }
 
@@ -79,6 +79,10 @@ input[type="password"]:focus {
 
 .card-beautydepot {
   border-top-color: #7c3aed;
+}
+
+.card-molvu {
+  border-top-color: #0d9488;
 }
 
 .card-solcom {
@@ -161,6 +165,15 @@ button:not(:disabled):active {
   background: #6d28d9;
 }
 
+.card-molvu .btn-primary {
+  background: #0d9488;
+  color: #fff;
+}
+
+.card-molvu .btn-primary:not(:disabled):hover {
+  background: #0f766e;
+}
+
 .card-solcom .btn-primary {
   background: #2563eb;
   color: #fff;
@@ -230,6 +243,11 @@ a:not(.hidden) {
 .card-beautydepot .spinner {
   border-color: #c4b5fd;
   border-top-color: #7c3aed;
+}
+
+.card-molvu .spinner {
+  border-color: #99f6e4;
+  border-top-color: #0d9488;
 }
 
 .card-solcom .spinner {
