@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: scrapers-portal
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --timeout 120 --workers 1
+    envVars:
+      - key: SCRAPE_SECRET
+        sync: false
+      - key: SOLCOM_EMAIL
+        sync: false
+      - key: SOLCOM_PASSWORD
+        sync: false
+      - key: SUPABASE_URL
+        value: https://pknkpvysiarfxvrhjqcx.supabase.co
+      - key: SUPABASE_ANON_KEY
+        value: sb_publishable_Cl0OcY_9jV5dPYOmkRh72g_sY1R50Og
+      - key: USE_PLAYWRIGHT
+        value: "false"
+      - key: PYTHON_VERSION
+        value: "3.12"

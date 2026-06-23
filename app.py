@@ -1,7 +1,6 @@
 """Unified Flask portal for Beauty Depot and Solís Comercial scrapers."""
 
 import os
-import sys
 import threading
 from collections.abc import Callable
 from datetime import datetime, timezone
@@ -9,20 +8,10 @@ from pathlib import Path
 
 from flask import Flask, jsonify, request, send_file, send_from_directory
 
+from scrape_beautydepot import OUTPUT_PATH as BEAUTY_OUTPUT
+from scrape_beautydepot import run_scrape as beauty_run_scrape
 from scrape_inventory import OUTPUT_PATH as SOLCOM_OUTPUT
 from scrape_inventory import run_scrape as solcom_run_scrape
-
-APP_DIR = Path(__file__).parent
-OUTPUT_DIR = APP_DIR / "output"
-BEAUTY_OUTPUT = OUTPUT_DIR / "beautydepot_productos.csv"
-
-BEAUTY_DEPOT_DIR = Path(
-    os.getenv("BEAUTY_DEPOT_DIR", r"c:\Users\leand\beautydepot-scraper")
-)
-if str(BEAUTY_DEPOT_DIR) not in sys.path:
-    sys.path.insert(0, str(BEAUTY_DEPOT_DIR))
-
-from scrape import run_scrape as beauty_run_scrape  # noqa: E402
 
 app = Flask(__name__, static_folder="static", static_url_path="/static")
 

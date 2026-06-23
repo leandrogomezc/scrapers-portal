@@ -16,12 +16,15 @@ from typing import Any
 from urllib.parse import urljoin, urlparse
 
 import pandas as pd
+import requests
 from dotenv import load_dotenv
 from playwright.sync_api import Page, Response, sync_playwright
 
 OUTPUT_DIR = Path(__file__).parent / "output"
 OUTPUT_PATH = OUTPUT_DIR / "inventario.csv"
 PIVOT_API_PATH = "/api/inventory/pivot?showZeroStock=false"
+DEFAULT_SUPABASE_URL = "https://pknkpvysiarfxvrhjqcx.supabase.co"
+DEFAULT_SUPABASE_ANON_KEY = "sb_publishable_Cl0OcY_9jV5dPYOmkRh72g_sY1R50Og"
 
 EXPORT_COLUMNS = [
     "SKU",
@@ -673,7 +676,7 @@ def export_csv(rows: list[dict[str, Any]], output_path: Path | None = None) -> P
     return target
 
 
-def scrape_inventory(
+def scrape_inventory_playwright(
     config: Config,
     on_progress: Callable[[str], None] | None = None,
 ) -> ScrapeResult:
@@ -738,13 +741,108 @@ def scrape_inventory(
             browser.close()
 
 
+def supabase_cookie_name(supabase_url: str) -> str:
+    host = supabase_url.replace("https://", "").replace("http://", "").split(".")[0]
+    return f"sb-{host}-auth-token"
+
+
+def supabase_auth_session(config: Config) -> requests.Session:
+    load_dotenv()
+    supabase_url = os.getenv("SUPABASE_URL", DEFAULT_SUPABASE_URL).rstrip("/")
+    anon_key = os.getenv("SUPABASE_ANON_KEY", DEFAULT_SUPABASE_ANON_KEY)
+    if not config.email or not config.password:
+        raise RuntimeError("Faltan SOLCOM_EMAIL o SOLCOM_PASSWORD en el entorno.")
+
+    headers = {
+        "apikey": anon_key,
+        "Authorization": f"Bearer {anon_key}",
+        "Content-Type": "application/json",
+    }
+    response = requests.post(
+        f"{supabase_url}/auth/v1/token?grant_type=password",
+        headers=headers,
+        json={"email": config.email, "password": config.password},
+        timeout=60,
+    )
+    if not response.ok:
+        raise RuntimeError(f"Login Supabase fallido: {response.status_code} {response.text[:200]}")
+
+    tokens = response.json()
+    session_obj = {
+        "access_token": tokens["access_token"],
+        "refresh_token": tokens.get("refresh_token"),
+        "expires_in": tokens.get("expires_in"),
+        "expires_at": tokens.get("expires_at"),
+        "token_type": tokens.get("token_type", "bearer"),
+        "user": tokens.get("user"),
+    }
+
+    session = requests.Session()
+    domain = config.base_url.replace("https://", "").replace("http://", "").split("/")[0]
+    session.cookies.set(
+        supabase_cookie_name(supabase_url),
+        json.dumps(session_obj),
+        domain=domain,
+        path="/",
+    )
+    session.headers.update({"Accept": "application/json", "User-Agent": "SolcomScraper/1.0"})
+    return session
+
+
+def fetch_pivot_items_api(session: requests.Session, config: Config) -> list[dict[str, Any]]:
+    pivot_url = f"{config.base_url}{PIVOT_API_PATH}"
+    response = session.get(pivot_url, timeout=60)
+    if not response.ok:
+        raise RuntimeError(
+            f"No se pudo obtener inventario ({response.status_code}): {response.text[:200]}"
+        )
+    payload = response.json()
+    items = payload.get("items") if isinstance(payload, dict) else None
+    if not isinstance(items, list):
+        raise RuntimeError("Respuesta de inventario sin items.")
+    return [item for item in items if isinstance(item, dict)]
+
+
+def scrape_inventory_api(
+    config: Config,
+    on_progress: Callable[[str], None] | None = None,
+) -> ScrapeResult:
+    def report(message: str) -> None:
+        print(message)
+        if on_progress:
+            on_progress(message)
+
+    report("Iniciando sesion via API...")
+    session = supabase_auth_session(config)
+    report("Extrayendo inventario...")
+    pivot_items = fetch_pivot_items_api(session, config)
+    warehouses: set[str] = set()
+    for item in pivot_items:
+        warehouse_qty = item.get("warehouseQty") or item.get("warehouseqty")
+        if isinstance(warehouse_qty, dict):
+            warehouses.update(warehouse_qty.keys())
+    report(f"Datos extraidos via API pivot ({len(pivot_items)} productos).")
+    return ScrapeResult(
+        rows=pivot_items,
+        warehouses=warehouses,
+        source=f"api:{config.base_url}{PIVOT_API_PATH}",
+    )
+
+
 def run_scrape(
     on_progress: Callable[[str], None] | None = None,
     headed: bool = False,
     output_path: Path | None = None,
 ) -> dict[str, Any]:
+    load_dotenv()
+    use_playwright = os.getenv("USE_PLAYWRIGHT", "false").lower() == "true"
     config = load_config(headed=headed)
-    result = scrape_inventory(config, on_progress=on_progress)
+
+    if use_playwright:
+        result = scrape_inventory_playwright(config, on_progress=on_progress)
+    else:
+        result = scrape_inventory_api(config, on_progress=on_progress)
+
     report = on_progress or (lambda _msg: None)
     report("Normalizando datos...")
     export_rows = normalize_export_rows(result.rows)
@@ -774,7 +872,7 @@ def main() -> None:
 
     print("Solcom ERP - Scraper de inventario")
     if config.discover:
-        scrape_inventory(config)
+        scrape_inventory_playwright(config)
         return
 
     result = run_scrape(headed=config.headed)
