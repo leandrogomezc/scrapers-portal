@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Portal de Scrapers</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <div class="portal">
+      <header class="portal-header">
+        <h1>Portal de Scrapers</h1>
+        <p class="subtitle">
+          Descarga catálogos de Beauty Depot y inventario de Solís Comercial.
+        </p>
+        <label for="token">Token de acceso (opcional)</label>
+        <input
+          type="password"
+          id="token"
+          placeholder="Solo si SCRAPE_SECRET está configurado"
+          autocomplete="off"
+        />
+      </header>
+
+      <div class="portal-grid">
+        <section class="card card-beautydepot" data-source="beautydepot">
+          <h2>Beauty Depot</h2>
+          <p class="card-desc">
+            Catálogo completo de beautydepot.com.gt (~2045 productos).
+          </p>
+          <div class="actions">
+            <button type="button" class="btn-primary run-btn">Ejecutar scrape</button>
+            <a class="download-link hidden" href="/download/beautydepot/csv">
+              <button type="button" class="btn-secondary">Descargar CSV</button>
+            </a>
+          </div>
+          <div class="status">
+            <div class="status-label">Estado</div>
+            <div class="status-message">Listo para ejecutar.</div>
+          </div>
+        </section>
+
+        <section class="card card-solcom" data-source="solcom">
+          <h2>Solís Comercial</h2>
+          <p class="card-desc">
+            Inventario de solcom-erp.vercel.app (SKU, marca, cantidad, condición).
+          </p>
+          <div class="actions">
+            <button type="button" class="btn-primary run-btn">Descargar inventario</button>
+            <a class="download-link hidden" href="/download/solcom/csv">
+              <button type="button" class="btn-secondary">Descargar CSV</button>
+            </a>
+          </div>
+          <div class="status">
+            <div class="status-label">Estado</div>
+            <div class="status-message">Listo para ejecutar.</div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <script>
+      const TOKEN_KEY = "portal_scrape_token";
+      const tokenInput = document.getElementById("token");
+      const pollTimers = {};
+
+      const savedToken = sessionStorage.getItem(TOKEN_KEY);
+      if (savedToken) tokenInput.value = savedToken;
+
+      function getToken() {
+        const token = tokenInput.value.trim();
+        if (token) sessionStorage.setItem(TOKEN_KEY, token);
+        return token;
+      }
+
+      function escapeHtml(text) {
+        const div = document.createElement("div");
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      function getCardElements(card) {
+        return {
+          runBtn: card.querySelector(".run-btn"),
+          downloadLink: card.querySelector(".download-link"),
+          statusBox: card.querySelector(".status"),
+          statusMessage: card.querySelector(".status-message"),
+        };
+      }
+
+      function setStatus(card, status, message, showSpinner = false) {
+        const { statusBox, statusMessage } = getCardElements(card);
+        statusBox.className = "status";
+        if (status && status !== "idle") statusBox.classList.add(status);
+        statusMessage.innerHTML = showSpinner
+          ? '<span class="spinner"></span>' + escapeHtml(message)
+          : escapeHtml(message);
+      }
+
+      function setRunning(card, isRunning) {
+        getCardElements(card).runBtn.disabled = isRunning;
+        tokenInput.disabled =
+          document.querySelectorAll(".run-btn:disabled").length > 0;
+      }
+
+      function showDownload(card, show) {
+        getCardElements(card).downloadLink.classList.toggle("hidden", !show);
+      }
+
+      async function pollStatus(source, card) {
+        try {
+          const res = await fetch(`/api/${source}/status`);
+          const data = await res.json();
+
+          if (data.status === "running") {
+            setStatus(card, "running", data.message || "En progreso...", true);
+            showDownload(card, false);
+            setRunning(card, true);
+            return;
+          }
+
+          clearInterval(pollTimers[source]);
+          pollTimers[source] = null;
+          setRunning(card, false);
+
+          if (data.status === "done") {
+            setStatus(card, "done", data.message || `Completado: ${data.rows} productos`);
+            showDownload(card, true);
+          } else if (data.status === "error") {
+            setStatus(card, "error", data.message || "Error desconocido");
+            showDownload(card, false);
+          } else {
+            setStatus(card, "idle", "Listo para ejecutar.");
+            showDownload(card, data.output_path != null);
+          }
+        } catch (err) {
+          clearInterval(pollTimers[source]);
+          pollTimers[source] = null;
+          setRunning(card, false);
+          setStatus(card, "error", "Error al consultar el estado: " + err.message);
+        }
+      }
+
+      async function startScrape(source, card) {
+        const token = getToken();
+        setRunning(card, true);
+        showDownload(card, false);
+        setStatus(card, "running", "Iniciando...", true);
+
+        try {
+          const res = await fetch(`/api/${source}/run`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Scrape-Token": token,
+            },
+            body: JSON.stringify({ token }),
+          });
+
+          const data = await res.json().catch(() => ({}));
+
+          if (res.status === 401) {
+            setRunning(card, false);
+            setStatus(card, "error", "Token inválido. Verifica tu clave de acceso.");
+            return;
+          }
+
+          if (res.status === 409) {
+            setStatus(card, "running", data.error || "Ya hay un scrape en ejecución", true);
+          } else if (!res.ok) {
+            setRunning(card, false);
+            setStatus(card, "error", data.error || "No se pudo iniciar el scrape");
+            return;
+          }
+
+          if (pollTimers[source]) clearInterval(pollTimers[source]);
+          pollTimers[source] = setInterval(() => pollStatus(source, card), 2000);
+          pollStatus(source, card);
+        } catch (err) {
+          setRunning(card, false);
+          setStatus(card, "error", "Error de conexión: " + err.message);
+        }
+      }
+
+      document.querySelectorAll(".card[data-source]").forEach((card) => {
+        const source = card.dataset.source;
+        card.querySelector(".run-btn").addEventListener("click", () => startScrape(source, card));
+        pollStatus(source, card);
+      });
+    </script>
+  </body>
+</html>

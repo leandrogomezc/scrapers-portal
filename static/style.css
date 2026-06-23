@@ -1,0 +1,232 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  background: linear-gradient(160deg, #fdf2f8 0%, #eff6ff 40%, #f0fdf4 100%);
+  color: #0f172a;
+  padding: 24px;
+}
+
+.portal {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.portal-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.portal-header h1 {
+  margin: 0 0 8px;
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+.subtitle {
+  margin: 0 0 20px;
+  color: #64748b;
+  font-size: 0.95rem;
+}
+
+label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #475569;
+  text-align: left;
+  max-width: 360px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+input[type="password"] {
+  width: 100%;
+  max-width: 360px;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 1rem;
+  display: block;
+  margin: 0 auto;
+}
+
+input[type="password"]:focus {
+  outline: 2px solid #6366f1;
+  border-color: transparent;
+}
+
+.portal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+}
+
+.card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(15, 23, 42, 0.08);
+  padding: 28px;
+  border-top: 4px solid #6366f1;
+}
+
+.card-beautydepot {
+  border-top-color: #7c3aed;
+}
+
+.card-solcom {
+  border-top-color: #2563eb;
+}
+
+.card h2 {
+  margin: 0 0 8px;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.card-desc {
+  margin: 0 0 20px;
+  color: #64748b;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+button {
+  width: 100%;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+button:not(:disabled):active {
+  transform: scale(0.98);
+}
+
+.card-beautydepot .btn-primary {
+  background: #7c3aed;
+  color: #fff;
+}
+
+.card-beautydepot .btn-primary:not(:disabled):hover {
+  background: #6d28d9;
+}
+
+.card-solcom .btn-primary {
+  background: #2563eb;
+  color: #fff;
+}
+
+.card-solcom .btn-primary:not(:disabled):hover {
+  background: #1d4ed8;
+}
+
+.btn-secondary {
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+}
+
+.btn-secondary:not(:disabled):hover {
+  background: #e2e8f0;
+}
+
+a.hidden {
+  display: none;
+}
+
+a:not(.hidden) {
+  text-decoration: none;
+}
+
+.status {
+  margin-top: 20px;
+  padding: 14px;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  min-height: 56px;
+}
+
+.status.running {
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+
+.status.done {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+
+.status.error {
+  border-color: #fca5a5;
+  background: #fef2f2;
+}
+
+.status-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+  margin-bottom: 6px;
+}
+
+.status-message {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.card-beautydepot .spinner {
+  border-color: #c4b5fd;
+  border-top-color: #7c3aed;
+}
+
+.card-solcom .spinner {
+  border-color: #93c5fd;
+  border-top-color: #2563eb;
+}
+
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #93c5fd;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  vertical-align: middle;
+  margin-right: 8px;
+}
+
+.hidden {
+  display: none !important;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
