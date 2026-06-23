@@ -26,13 +26,13 @@
         <section class="card card-beautydepot" data-source="beautydepot">
           <h2>Beauty Depot</h2>
           <p class="card-desc">
-            Catálogo completo de beautydepot.com.gt (~2045 productos). Sube tu CSV
+            Catálogo completo de beautydepot.com.gt (~2045 productos). Sube tu Excel
             maestro para generar actualización de Precio e inventario Beauty Depot.
           </p>
           <div class="update-section">
-            <label class="file-label" for="master-file">CSV maestro (SKU, Precio, Beauty Depot)</label>
-            <input type="file" id="master-file" accept=".csv" class="file-input" />
-            <div class="master-status" id="master-status">Sin CSV maestro subido.</div>
+            <label class="file-label" for="master-file">Archivo maestro (.xlsx) — SKU, Precio, Beauty Depot</label>
+            <input type="file" id="master-file" accept=".xlsx,.csv" class="file-input" />
+            <div class="master-status" id="master-status">Sin archivo maestro subido.</div>
           </div>
           <div class="actions">
             <button type="button" class="btn-primary run-btn">Ejecutar scrape</button>
@@ -115,9 +115,10 @@
           updateState.updateAvailable = Boolean(data.update_available);
 
           if (data.master_uploaded && data.master_rows != null) {
-            masterStatusEl.textContent = `CSV maestro cargado: ${data.master_rows} filas.`;
+            const fmt = data.master_format ? data.master_format.toUpperCase() : "XLSX";
+            masterStatusEl.textContent = `Archivo maestro (${fmt}) cargado: ${data.master_rows} filas.`;
           } else {
-            masterStatusEl.textContent = "Sin CSV maestro subido.";
+            masterStatusEl.textContent = "Sin archivo maestro subido.";
           }
 
           showUpdateDownload(updateState.updateAvailable);
@@ -132,7 +133,7 @@
         const formData = new FormData();
         formData.append("file", file);
 
-        masterStatusEl.textContent = "Subiendo CSV maestro...";
+        masterStatusEl.textContent = "Subiendo archivo maestro...";
 
         try {
           const res = await fetch("/api/beautydepot/upload-master", {
@@ -148,11 +149,12 @@
           }
 
           if (!res.ok) {
-            masterStatusEl.textContent = data.error || "Error al subir el CSV maestro.";
+            masterStatusEl.textContent = data.error || "Error al subir el archivo maestro.";
             return;
           }
 
-          masterStatusEl.textContent = `CSV maestro cargado: ${data.master_rows} filas.`;
+          const fmt = data.format ? data.format.toUpperCase() : "XLSX";
+          masterStatusEl.textContent = `Archivo maestro (${fmt}) cargado: ${data.master_rows} filas.`;
           updateState.masterUploaded = true;
           refreshGenerateButton();
         } catch (err) {

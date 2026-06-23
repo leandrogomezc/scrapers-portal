@@ -50,17 +50,17 @@ Abre http://127.0.0.1:5050
 ## Salida CSV
 
 - `output/beautydepot_productos.csv` — ~2045 productos (catálogo completo)
-- `output/beautydepot_actualizacion.csv` — actualización parcial desde CSV maestro
+- `output/beautydepot_actualizacion.xlsx` — actualización parcial desde archivo maestro
 - `output/inventario.csv` — ~516 productos (SKU, nombre, marca, cantidad, condición)
 
 ## Actualización de inventario Beauty Depot
 
 Flujo para generar un CSV que **solo modifica** `Precio` e inventario en la columna `Beauty Depot`:
 
-1. Sube tu **CSV maestro** con columnas obligatorias: `SKU`, `Precio`, `Beauty Depot` (puede incluir otras columnas).
+1. Sube tu **archivo maestro** (`.xlsx` recomendado, también `.csv`) con columnas obligatorias: `SKU`, `Precio`, `Beauty Depot` (puede incluir otras columnas).
 2. Ejecuta el scrape de Beauty Depot.
 3. Pulsa **Generar actualización**.
-4. Descarga `beautydepot_actualizacion.csv` e impórtalo en tu sistema.
+4. Descarga `beautydepot_actualizacion.xlsx` (o `.csv` si subiste CSV) e impórtalo en tu sistema.
 
 Reglas por fila del maestro (comparación por `SKU`):
 
@@ -69,7 +69,7 @@ Reglas por fila del maestro (comparación por `SKU`):
 | `Precio` | Precio de venta al público del scrape | Sin cambio (valor original) |
 | `Beauty Depot` | `10` | `0` |
 
-**Render Free:** el CSV maestro subido se guarda en disco efímero; vuelve a subirlo tras cada redeploy.
+**Render Free:** el archivo maestro subido se guarda en disco efímero; vuelve a subirlo tras cada redeploy.
 
 ## API
 

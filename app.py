@@ -1,7 +1,7 @@
 """Unified Flask portal for Beauty Depot and Solís Comercial scrapers."""
 
-import csv
 import os
+import tempfile
 import threading
 from collections.abc import Callable
 from datetime import datetime, timezone
@@ -10,11 +10,13 @@ from pathlib import Path
 from flask import Flask, jsonify, request, send_file, send_from_directory
 
 from beautydepot_update import (
-    MASTER_PATH,
-    UPDATE_OUTPUT_PATH,
-    MasterCsvError,
+    MasterFileError,
+    find_master_path,
+    find_update_path,
     generate_update,
     get_update_status,
+    read_master_rows,
+    save_master_upload,
     validate_master_columns,
 )
 from scrape_beautydepot import OUTPUT_PATH as BEAUTY_OUTPUT
@@ -168,32 +170,35 @@ def beautydepot_upload_master():
 
     upload = request.files.get("file")
     if not upload or not upload.filename:
-        return jsonify({"error": "Debes subir un archivo CSV."}), 400
+        return jsonify({"error": "Debes subir un archivo maestro (.xlsx o .csv)."}), 400
 
-    if not upload.filename.lower().endswith(".csv"):
-        return jsonify({"error": "El archivo debe ser un CSV."}), 400
+    filename = upload.filename.lower()
+    if not (filename.endswith(".xlsx") or filename.endswith(".csv")):
+        return jsonify({"error": "El archivo debe ser .xlsx o .csv."}), 400
 
-    MASTER_PATH.parent.mkdir(parents=True, exist_ok=True)
-    upload.save(MASTER_PATH)
+    suffix = ".xlsx" if filename.endswith(".xlsx") else ".csv"
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+        upload.save(tmp.name)
+        temp_path = Path(tmp.name)
 
+    master_path = None
     try:
-        with MASTER_PATH.open(encoding="utf-8-sig", newline="") as handle:
-            reader = csv.DictReader(handle)
-            fieldnames = list(reader.fieldnames or [])
-            rows = list(reader)
+        fieldnames, rows = read_master_rows(temp_path)
         validate_master_columns(fieldnames)
-    except MasterCsvError as exc:
-        MASTER_PATH.unlink(missing_ok=True)
+        master_path = save_master_upload(temp_path, upload.filename)
+    except MasterFileError as exc:
+        temp_path.unlink(missing_ok=True)
         return jsonify({"error": str(exc)}), 400
-    except (OSError, csv.Error) as exc:
-        MASTER_PATH.unlink(missing_ok=True)
-        return jsonify({"error": f"CSV inválido: {exc}"}), 400
+    except (OSError, ValueError) as exc:
+        temp_path.unlink(missing_ok=True)
+        return jsonify({"error": f"Archivo inválido: {exc}"}), 400
 
     return jsonify(
         {
             "status": "ok",
             "master_rows": len(rows),
             "columns": fieldnames,
+            "format": master_path.suffix.lstrip(".").lower(),
         }
     )
 
@@ -203,15 +208,15 @@ def beautydepot_generate_update():
     if not _is_authorized():
         return jsonify({"error": "Token inválido o faltante"}), 401
 
-    if not MASTER_PATH.exists():
-        return jsonify({"error": "Sube primero el CSV maestro."}), 400
+    if not find_master_path():
+        return jsonify({"error": "Sube primero el archivo maestro."}), 400
 
     if not BEAUTY_OUTPUT.exists():
         return jsonify({"error": "Ejecuta primero el scrape de Beauty Depot."}), 400
 
     try:
         result = generate_update()
-    except MasterCsvError as exc:
+    except MasterFileError as exc:
         return jsonify({"error": str(exc)}), 400
     except FileNotFoundError as exc:
         return jsonify({"error": str(exc)}), 400
@@ -223,14 +228,20 @@ def beautydepot_generate_update():
 
 @app.get("/download/beautydepot/update-csv")
 def download_beautydepot_update_csv():
-    if not UPDATE_OUTPUT_PATH.exists():
+    update_path = find_update_path()
+    if not update_path:
         return jsonify({"error": "No hay archivo de actualización. Genera uno primero."}), 404
 
+    if update_path.suffix.lower() == ".xlsx":
+        mimetype = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    else:
+        mimetype = "text/csv"
+
     return send_file(
-        UPDATE_OUTPUT_PATH,
+        update_path,
         as_attachment=True,
-        download_name="beautydepot_actualizacion.csv",
-        mimetype="text/csv",
+        download_name=f"beautydepot_actualizacion{update_path.suffix}",
+        mimetype=mimetype,
     )
 
 
