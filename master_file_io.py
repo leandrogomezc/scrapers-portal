@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import io
 import shutil
 from pathlib import Path
 
@@ -81,25 +82,54 @@ def _csv_encoding_candidates(path: Path) -> list[str]:
     return ["utf-8-sig", "cp1252", "latin-1"]
 
 
+def _parse_csv_text(text: str) -> tuple[str, list[str]]:
+    text = text.lstrip("\ufeff")
+    lines = text.splitlines()
+    if not lines:
+        raise MasterFileError("El archivo está vacío.")
+
+    start_idx = 0
+    delimiter = ","
+
+    first = lines[0].strip()
+    if first.lower().startswith("sep="):
+        sep_value = first[4:].strip()
+        delimiter = sep_value[0] if sep_value else ";"
+        start_idx = 1
+    elif ";" in lines[0] and lines[0].count(";") > lines[0].count(","):
+        delimiter = ";"
+
+    return delimiter, lines[start_idx:]
+
+
+def _read_csv_dict_rows(text: str) -> tuple[list[str], list[dict[str, str]]]:
+    delimiter, body_lines = _parse_csv_text(text)
+    if not body_lines:
+        raise MasterFileError("El archivo no tiene encabezados.")
+
+    reader = csv.DictReader(io.StringIO("\n".join(body_lines)), delimiter=delimiter)
+    if not reader.fieldnames:
+        raise MasterFileError("El archivo no tiene encabezados.")
+
+    raw_fieldnames = list(reader.fieldnames)
+    fieldnames = [_normalize_csv_fieldname(name) for name in raw_fieldnames]
+    rows = []
+    for row in reader:
+        rows.append(
+            {
+                fieldnames[i]: (row.get(raw_fieldnames[i]) or "")
+                for i in range(len(fieldnames))
+            }
+        )
+    return fieldnames, rows
+
+
 def read_csv_rows(path: Path) -> tuple[list[str], list[dict[str, str]]]:
     last_error: UnicodeDecodeError | None = None
     for encoding in _csv_encoding_candidates(path):
         try:
-            with path.open(encoding=encoding, newline="") as handle:
-                reader = csv.DictReader(handle)
-                if not reader.fieldnames:
-                    raise MasterFileError("El archivo no tiene encabezados.")
-                raw_fieldnames = list(reader.fieldnames)
-                fieldnames = [_normalize_csv_fieldname(name) for name in raw_fieldnames]
-                rows = []
-                for row in reader:
-                    rows.append(
-                        {
-                            fieldnames[i]: (row.get(raw_fieldnames[i]) or "")
-                            for i in range(len(fieldnames))
-                        }
-                    )
-            return fieldnames, rows
+            text = path.read_text(encoding=encoding)
+            return _read_csv_dict_rows(text)
         except UnicodeDecodeError as exc:
             last_error = exc
     raise MasterFileError(
