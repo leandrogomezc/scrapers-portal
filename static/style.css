@@ -171,6 +171,24 @@ input[type="password"]:focus {
   border-top-color: #2563eb;
 }
 
+.card-tecnobodega {
+  border-top-color: #0891b2;
+}
+
+.card-tecnobodega .btn-primary {
+  background: #0891b2;
+  color: #fff;
+}
+
+.card-tecnobodega .btn-primary:not(:disabled):hover {
+  background: #0e7490;
+}
+
+.card-tecnobodega .spinner {
+  border-color: #67e8f9;
+  border-top-color: #0891b2;
+}
+
 .card-moderna {
   border-top-color: #dc2626;
 }

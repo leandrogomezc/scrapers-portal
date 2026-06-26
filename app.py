@@ -45,6 +45,8 @@ from scrape_biotech import OUTPUT_PATH as BIOTECH_OUTPUT
 from scrape_biotech import run_scrape as biotech_run_scrape
 from scrape_molvu import OUTPUT_PATH as MOLVU_OUTPUT
 from scrape_molvu import run_scrape as molvu_run_scrape
+from scrape_tecnobodega import OUTPUT_PATH as TECNOBODEGA_OUTPUT
+from scrape_tecnobodega import run_scrape as tecnobodega_run_scrape
 
 app = Flask(__name__, static_folder="static", static_url_path="/static")
 
@@ -64,6 +66,7 @@ _jobs: dict[str, dict] = {
     "biotech": dict(_idle_job),
     "molvu": dict(_idle_job),
     "solcom": dict(_idle_job),
+    "tecnobodega": dict(_idle_job),
 }
 
 SCRAPERS: dict[str, dict] = {
@@ -94,6 +97,13 @@ SCRAPERS: dict[str, dict] = {
         "output_path": SOLCOM_OUTPUT,
         "download_name": "inventario.csv",
         "start_message": "Iniciando extracción de inventario...",
+    },
+    "tecnobodega": {
+        "label": "TecnoBodega",
+        "run": tecnobodega_run_scrape,
+        "output_path": TECNOBODEGA_OUTPUT,
+        "download_name": "tecnobodega_productos.csv",
+        "start_message": "Iniciando scrape de TecnoBodega...",
     },
 }
 
@@ -440,7 +450,7 @@ if __name__ == "__main__":
     url = f"http://127.0.0.1:{port}"
     print("=" * 50)
     print("  Portal de Scrapers")
-    print("  Beauty Depot + Biotech + Molvu + Solís Comercial")
+    print("  Beauty Depot + Biotech + Molvu + Solís Comercial + TecnoBodega")
     print(f"  Abre en tu navegador: {url}")
     print("  Presiona Ctrl+C para detener el servidor")
     print("=" * 50)

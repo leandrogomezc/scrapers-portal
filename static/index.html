@@ -105,6 +105,24 @@
               <div class="status-message">Listo para ejecutar.</div>
             </div>
           </section>
+
+          <section class="card card-tecnobodega" data-source="tecnobodega">
+            <h2>TecnoBodega</h2>
+            <p class="card-desc">
+              Catálogo completo de tecnobodega.com.gt (WooCommerce). SKU, nombre,
+              descripción, imagen y precio de venta.
+            </p>
+            <div class="actions">
+              <button type="button" class="btn-primary run-btn">Ejecutar scrape</button>
+              <a class="download-link hidden" href="/download/tecnobodega/csv">
+                <button type="button" class="btn-secondary">Descargar CSV catálogo</button>
+              </a>
+            </div>
+            <div class="status">
+              <div class="status-label">Estado</div>
+              <div class="status-message">Listo para ejecutar.</div>
+            </div>
+          </section>
         </div>
       </div>
 
@@ -143,14 +161,14 @@
             <h2>Solís Comercial</h2>
             <p class="card-desc">
               Compara tu Excel maestro con el inventario scrapeado y actualiza la
-              columna DataShop con la cantidad real.
+              columna Punto Digital con la cantidad real.
             </p>
             <div class="scrape-badge missing" id="scrape-badge-solcom">
               Falta ejecutar scrape.
               <button type="button" class="tab-link">Ir a Scrape</button>
             </div>
             <div class="update-section">
-              <label class="file-label" for="solcom-master-file">Archivo maestro (.xlsx) — SKU, DataShop</label>
+              <label class="file-label" for="solcom-master-file">Archivo maestro (.xlsx) — SKU, Punto Digital</label>
               <input type="file" id="solcom-master-file" accept=".xlsx,.csv" class="file-input" />
               <div class="master-status" id="solcom-master-status">Sin archivo maestro subido.</div>
             </div>

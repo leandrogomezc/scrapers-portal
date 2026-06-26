@@ -54,7 +54,7 @@ Abre http://127.0.0.1:5050
 - `output/molvu_productos.csv` — catálogo molvu.com.gt (Shopify)
 - `output/beautydepot_actualizacion.xlsx` — actualización parcial desde archivo maestro
 - `output/inventario.csv` — ~516 productos (SKU, nombre, marca, cantidad, condición)
-- `output/solcom_actualizacion.xlsx` — actualización parcial DataShop desde archivo maestro
+- `output/solcom_actualizacion.xlsx` — actualización parcial Punto Digital desde archivo maestro
 
 ## Actualización de inventario Beauty Depot
 
@@ -76,9 +76,9 @@ Reglas por fila del maestro (comparación por `SKU`):
 
 ## Actualización de inventario Solís Comercial
 
-Flujo para generar un archivo que **solo modifica** la columna `DataShop`:
+Flujo para generar un archivo que **solo modifica** la columna `Punto Digital`:
 
-1. Sube tu **archivo maestro** (`.xlsx` recomendado, también `.csv`) con columnas obligatorias: `SKU`, `DataShop`.
+1. Sube tu **archivo maestro** (`.xlsx` recomendado, también `.csv`) con columnas obligatorias: `SKU`, `Punto Digital`.
 2. Ejecuta el scrape de Solís Comercial.
 3. Pulsa **Generar actualización**.
 4. Descarga `solcom_actualizacion.xlsx` e impórtalo en tu sistema.
@@ -87,7 +87,7 @@ Reglas por fila del maestro (comparación por `SKU`):
 
 | Columna | Si el SKU está en el scrape | Si no está en el scrape |
 |---------|----------------------------|-------------------------|
-| `DataShop` | Cantidad real del inventario Solcom | `0` |
+| `Punto Digital` | Cantidad real del inventario Solcom | `0` |
 
 Si un SKU aparece más de una vez en el scrape, se suman las cantidades.
 

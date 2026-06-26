@@ -19,7 +19,7 @@ from scrape_inventory import OUTPUT_PATH as SCRAPE_OUTPUT_PATH
 STORE = MasterFileStore("solcom_master", "solcom_actualizacion")
 
 MASTER_SKU_COL = "SKU"
-UPDATE_STOCK_COL = "DataShop"
+UPDATE_STOCK_COL = "Punto Digital"
 
 SCRAPE_SKU_COL = "SKU"
 SCRAPE_QTY_COL = "Cantidad"
