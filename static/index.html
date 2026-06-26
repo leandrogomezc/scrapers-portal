@@ -167,6 +167,39 @@
               <div class="status-message">Listo para generar actualización.</div>
             </div>
           </section>
+
+          <section class="card card-moderna" data-update-source="moderna">
+            <h2>Moderna</h2>
+            <p class="card-desc">
+              Sube la Base de Datos de Moderna y tu Archivo de Actualización. El sistema
+              llenará Costo, Precio y MODERNA según el match SKU = Código.
+            </p>
+            <div class="scrape-badge missing" id="moderna-base-badge">
+              Falta subir base de datos.
+            </div>
+            <div class="update-section">
+              <label class="file-label" for="moderna-base-file">Base de Datos (.xlsx) — Código, Precio, Precio MAP, Stock</label>
+              <input type="file" id="moderna-base-file" accept=".xlsx,.csv" class="file-input" />
+              <div class="master-status" id="moderna-base-status">Sin base de datos subida.</div>
+            </div>
+            <div class="update-section">
+              <label class="file-label" for="moderna-master-file">Archivo de Actualización (.xlsx) — SKU, Costo, Precio, MODERNA</label>
+              <input type="file" id="moderna-master-file" accept=".xlsx,.csv" class="file-input" />
+              <div class="master-status" id="moderna-master-status">Sin archivo de actualización subido.</div>
+            </div>
+            <div class="actions">
+              <button type="button" class="btn-secondary generate-update-btn" disabled>
+                Generar actualización
+              </button>
+              <a class="update-download-link hidden" href="/download/moderna/update-csv">
+                <button type="button" class="btn-secondary">Descargar actualización</button>
+              </a>
+            </div>
+            <div class="status">
+              <div class="status-label">Estado</div>
+              <div class="status-message">Listo para generar actualización.</div>
+            </div>
+          </section>
         </div>
       </div>
     </div>
@@ -186,6 +219,7 @@
           masterStatusEl: document.getElementById("master-status"),
           scrapeBadgeEl: document.getElementById("scrape-badge-beautydepot"),
           card: document.querySelector('[data-update-source="beautydepot"]'),
+          requiresScrape: true,
           formatDoneMessage: (data) =>
             `${data.total} SKUs en maestro · ${data.stock_10} con stock 10 · ${data.stock_0} con stock 0`,
         },
@@ -197,14 +231,31 @@
           masterStatusEl: document.getElementById("solcom-master-status"),
           scrapeBadgeEl: document.getElementById("scrape-badge-solcom"),
           card: document.querySelector('[data-update-source="solcom"]'),
+          requiresScrape: true,
           formatDoneMessage: (data) =>
             `${data.total} SKUs · ${data.with_stock} con stock · ${data.zero_stock} en 0`,
+        },
+        moderna: {
+          statusUrl: "/api/moderna/update-status",
+          baseUploadUrl: "/api/moderna/upload-base",
+          uploadUrl: "/api/moderna/upload-master",
+          generateUrl: "/api/moderna/generate-update",
+          baseFileInput: document.getElementById("moderna-base-file"),
+          baseStatusEl: document.getElementById("moderna-base-status"),
+          masterFileInput: document.getElementById("moderna-master-file"),
+          masterStatusEl: document.getElementById("moderna-master-status"),
+          scrapeBadgeEl: document.getElementById("moderna-base-badge"),
+          card: document.querySelector('[data-update-source="moderna"]'),
+          requiresScrape: false,
+          formatDoneMessage: (data) =>
+            `${data.total} SKUs · ${data.matched} actualizados · ${data.with_stock} con stock · ${data.zero_stock} en 0`,
         },
       };
 
       const updateStates = {
         beautydepot: { masterUploaded: false, scrapeAvailable: false, updateAvailable: false },
         solcom: { masterUploaded: false, scrapeAvailable: false, updateAvailable: false },
+        moderna: { baseUploaded: false, masterUploaded: false, scrapeAvailable: false, updateAvailable: false },
       };
 
       const savedToken = sessionStorage.getItem(TOKEN_KEY);
@@ -251,12 +302,23 @@
         }
       }
 
+      function updateBaseBadge(sourceKey, available) {
+        const badge = UPDATE_SOURCES[sourceKey].scrapeBadgeEl;
+        badge.classList.toggle("available", available);
+        badge.classList.toggle("missing", !available);
+        badge.textContent = available ? "Base de datos cargada" : "Falta subir base de datos.";
+      }
+
       function refreshGenerateButton(sourceKey) {
         const config = UPDATE_SOURCES[sourceKey];
         const state = updateStates[sourceKey];
-        config.card.querySelector(".generate-update-btn").disabled = !(
-          state.masterUploaded && state.scrapeAvailable
-        );
+        const generateBtn = config.card.querySelector(".generate-update-btn");
+
+        if (config.requiresScrape === false) {
+          generateBtn.disabled = !(state.baseUploaded && state.masterUploaded);
+        } else {
+          generateBtn.disabled = !(state.masterUploaded && state.scrapeAvailable);
+        }
       }
 
       function showUpdateDownload(sourceKey, show) {
@@ -276,23 +338,79 @@
           state.scrapeAvailable = Boolean(data.scrape_available);
           state.updateAvailable = Boolean(data.update_available);
 
-          if (data.master_uploaded && data.master_rows != null) {
-            const fmt = data.master_format ? data.master_format.toUpperCase() : "XLSX";
-            config.masterStatusEl.textContent = `Archivo maestro (${fmt}) cargado: ${data.master_rows} filas.`;
+          if (config.requiresScrape === false) {
+            state.baseUploaded = Boolean(data.base_uploaded);
+            if (data.base_uploaded && data.base_rows != null) {
+              const fmt = data.base_format ? data.base_format.toUpperCase() : "XLSX";
+              config.baseStatusEl.textContent = `Base de datos (${fmt}) cargada: ${data.base_rows} filas.`;
+            } else {
+              config.baseStatusEl.textContent = "Sin base de datos subida.";
+            }
+            updateBaseBadge(sourceKey, state.baseUploaded);
           } else {
-            config.masterStatusEl.textContent = "Sin archivo maestro subido.";
+            updateScrapeBadge(sourceKey, state.scrapeAvailable);
           }
 
-          updateScrapeBadge(sourceKey, state.scrapeAvailable);
+          if (data.master_uploaded && data.master_rows != null) {
+            const fmt = data.master_format ? data.master_format.toUpperCase() : "XLSX";
+            const label = config.requiresScrape === false ? "Archivo de actualización" : "Archivo maestro";
+            config.masterStatusEl.textContent = `${label} (${fmt}) cargado: ${data.master_rows} filas.`;
+          } else {
+            config.masterStatusEl.textContent =
+              config.requiresScrape === false
+                ? "Sin archivo de actualización subido."
+                : "Sin archivo maestro subido.";
+          }
+
           showUpdateDownload(sourceKey, state.updateAvailable);
           refreshGenerateButton(sourceKey);
         } catch (err) {
+          if (config.baseStatusEl) {
+            config.baseStatusEl.textContent = "No se pudo consultar el estado.";
+          }
           config.masterStatusEl.textContent = "No se pudo consultar el estado del maestro.";
         }
       }
 
       function refreshAllUpdateStatus() {
         Object.keys(UPDATE_SOURCES).forEach(refreshUpdateStatus);
+      }
+
+      async function uploadBaseFile(sourceKey, file) {
+        const config = UPDATE_SOURCES[sourceKey];
+        const state = updateStates[sourceKey];
+        const token = getToken();
+        const formData = new FormData();
+        formData.append("file", file);
+
+        config.baseStatusEl.textContent = "Subiendo base de datos...";
+
+        try {
+          const res = await fetch(config.baseUploadUrl, {
+            method: "POST",
+            headers: { "X-Scrape-Token": token },
+            body: formData,
+          });
+          const data = await res.json().catch(() => ({}));
+
+          if (res.status === 401) {
+            config.baseStatusEl.textContent = "Token inválido. Verifica tu clave de acceso.";
+            return;
+          }
+
+          if (!res.ok) {
+            config.baseStatusEl.textContent = data.error || "Error al subir la base de datos.";
+            return;
+          }
+
+          const fmt = data.format ? data.format.toUpperCase() : "XLSX";
+          config.baseStatusEl.textContent = `Base de datos (${fmt}) cargada: ${data.master_rows} filas.`;
+          state.baseUploaded = true;
+          updateBaseBadge(sourceKey, true);
+          refreshGenerateButton(sourceKey);
+        } catch (err) {
+          config.baseStatusEl.textContent = "Error de conexión al subir: " + err.message;
+        }
       }
 
       async function uploadMasterFile(sourceKey, file) {
@@ -323,7 +441,8 @@
           }
 
           const fmt = data.format ? data.format.toUpperCase() : "XLSX";
-          config.masterStatusEl.textContent = `Archivo maestro (${fmt}) cargado: ${data.master_rows} filas.`;
+          const label = config.requiresScrape === false ? "Archivo de actualización" : "Archivo maestro";
+          config.masterStatusEl.textContent = `${label} (${fmt}) cargado: ${data.master_rows} filas.`;
           state.masterUploaded = true;
           refreshGenerateButton(sourceKey);
         } catch (err) {
@@ -374,6 +493,12 @@
       }
 
       Object.entries(UPDATE_SOURCES).forEach(([sourceKey, config]) => {
+        if (config.baseFileInput) {
+          config.baseFileInput.addEventListener("change", () => {
+            const file = config.baseFileInput.files[0];
+            if (file) uploadBaseFile(sourceKey, file);
+          });
+        }
         config.masterFileInput.addEventListener("change", () => {
           const file = config.masterFileInput.files[0];
           if (file) uploadMasterFile(sourceKey, file);

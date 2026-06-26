@@ -26,6 +26,17 @@ from solcom_update import (
     save_master_upload as save_solcom_master_upload,
     validate_solcom_master_columns,
 )
+from moderna_update import (
+    find_base_path as find_moderna_base_path,
+    find_master_path as find_moderna_master_path,
+    find_update_path as find_moderna_update_path,
+    generate_update as generate_moderna_update,
+    get_update_status as get_moderna_update_status,
+    save_base_upload as save_moderna_base_upload,
+    save_master_upload as save_moderna_master_upload,
+    validate_moderna_base_columns,
+    validate_moderna_master_columns,
+)
 from scrape_beautydepot import OUTPUT_PATH as BEAUTY_OUTPUT
 from scrape_beautydepot import run_scrape as beauty_run_scrape
 from scrape_inventory import OUTPUT_PATH as SOLCOM_OUTPUT
@@ -333,6 +344,69 @@ def solcom_generate_update():
 @app.get("/download/solcom/update-csv")
 def download_solcom_update_csv():
     return _send_update_file(find_solcom_update_path(), "solcom_actualizacion")
+
+
+@app.get("/api/moderna/update-status")
+def moderna_update_status():
+    return jsonify(get_moderna_update_status())
+
+
+@app.post("/api/moderna/upload-base")
+def moderna_upload_base():
+    if not _is_authorized():
+        return jsonify({"error": "Token inválido o faltante"}), 401
+
+    payload, error = _upload_master_file(
+        request.files.get("file"),
+        validate_moderna_base_columns,
+        save_moderna_base_upload,
+    )
+    if error:
+        return error
+    return jsonify(payload)
+
+
+@app.post("/api/moderna/upload-master")
+def moderna_upload_master():
+    if not _is_authorized():
+        return jsonify({"error": "Token inválido o faltante"}), 401
+
+    payload, error = _upload_master_file(
+        request.files.get("file"),
+        validate_moderna_master_columns,
+        save_moderna_master_upload,
+    )
+    if error:
+        return error
+    return jsonify(payload)
+
+
+@app.post("/api/moderna/generate-update")
+def moderna_generate_update():
+    if not _is_authorized():
+        return jsonify({"error": "Token inválido o faltante"}), 401
+
+    if not find_moderna_base_path():
+        return jsonify({"error": "Sube primero la Base de Datos."}), 400
+
+    if not find_moderna_master_path():
+        return jsonify({"error": "Sube primero el Archivo de Actualización."}), 400
+
+    try:
+        result = generate_moderna_update()
+    except MasterFileError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except FileNotFoundError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except OSError as exc:
+        return jsonify({"error": str(exc)}), 500
+
+    return jsonify({"status": "ok", **result})
+
+
+@app.get("/download/moderna/update-csv")
+def download_moderna_update_csv():
+    return _send_update_file(find_moderna_update_path(), "moderna_actualizacion")
 
 
 @app.get("/download/<source>/csv")

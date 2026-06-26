@@ -171,6 +171,15 @@ input[type="password"]:focus {
   border-top-color: #2563eb;
 }
 
+.card-moderna {
+  border-top-color: #dc2626;
+}
+
+.card-moderna .spinner {
+  border-color: #fca5a5;
+  border-top-color: #dc2626;
+}
+
 .card h2 {
   margin: 0 0 8px;
   font-size: 1.25rem;
