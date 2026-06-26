@@ -21,7 +21,7 @@ STORE = MasterFileStore("solcom_master", "solcom_actualizacion")
 
 MASTER_SKU_COL = "SKU"
 UPDATE_STOCK_COL = "Punto Digital"
-UPDATE_PRICE_COL = "Precio de Venta"
+UPDATE_PRICE_COL = "Precio"
 
 # Candidate columns that may hold the product name to match pasted prices against.
 NAME_COLUMN_CANDIDATES = ("Nombre del Producto", "Nombre", "Descripción", "Producto")
@@ -73,7 +73,7 @@ def apply_prices(
     rows: list[dict[str, str]],
     prices_text: str,
 ) -> dict:
-    """Overwrite ``Precio de Venta`` on rows matched from the pasted price list.
+    """Overwrite ``Precio`` on rows matched from the pasted price list.
 
     Only existing rows are updated; pasted entries without a confident match are
     ignored (never added as new rows).
