@@ -339,8 +339,12 @@ def solcom_generate_update():
     if not SOLCOM_OUTPUT.exists():
         return jsonify({"error": "Ejecuta primero el scrape de Solís Comercial."}), 400
 
+    prices_text = ""
+    if request.is_json and request.json:
+        prices_text = request.json.get("prices_text", "") or ""
+
     try:
-        result = generate_solcom_update()
+        result = generate_solcom_update(prices_text=prices_text)
     except MasterFileError as exc:
         return jsonify({"error": str(exc)}), 400
     except FileNotFoundError as exc:

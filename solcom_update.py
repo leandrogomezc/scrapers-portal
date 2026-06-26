@@ -15,11 +15,19 @@ from master_file_io import (
     write_update_rows,
 )
 from scrape_inventory import OUTPUT_PATH as SCRAPE_OUTPUT_PATH
+from solcom_prices import build_master_index, match_prices, parse_price_text
 
 STORE = MasterFileStore("solcom_master", "solcom_actualizacion")
 
 MASTER_SKU_COL = "SKU"
 UPDATE_STOCK_COL = "Punto Digital"
+UPDATE_PRICE_COL = "Precio de Venta"
+
+# Candidate columns that may hold the product name to match pasted prices against.
+NAME_COLUMN_CANDIDATES = ("Nombre del Producto", "Nombre", "Descripción", "Producto")
+
+# How many unmatched names to surface back to the UI.
+UNMATCHED_SAMPLE_SIZE = 15
 
 SCRAPE_SKU_COL = "SKU"
 SCRAPE_QTY_COL = "Cantidad"
@@ -53,6 +61,52 @@ def _parse_quantity(value: str) -> int:
         return 0
 
 
+def _detect_name_column(fieldnames: list[str]) -> str | None:
+    for candidate in NAME_COLUMN_CANDIDATES:
+        if candidate in fieldnames:
+            return candidate
+    return None
+
+
+def apply_prices(
+    fieldnames: list[str],
+    rows: list[dict[str, str]],
+    prices_text: str,
+) -> dict:
+    """Overwrite ``Precio de Venta`` on rows matched from the pasted price list.
+
+    Only existing rows are updated; pasted entries without a confident match are
+    ignored (never added as new rows).
+    """
+    parsed = parse_price_text(prices_text)
+    if not parsed:
+        return {"prices_matched": 0, "prices_unmatched": 0, "unmatched_sample": []}
+
+    if UPDATE_PRICE_COL not in fieldnames:
+        raise MasterFileError(
+            f"El maestro no tiene la columna requerida '{UPDATE_PRICE_COL}'."
+        )
+
+    name_col = _detect_name_column(fieldnames)
+    if not name_col:
+        raise MasterFileError(
+            "El maestro no tiene una columna de nombre de producto "
+            f"(se buscó: {', '.join(NAME_COLUMN_CANDIDATES)})."
+        )
+
+    master_index = build_master_index(rows, name_col)
+    result = match_prices(parsed, master_index)
+
+    for row_idx, price in result.prices_by_row.items():
+        rows[row_idx][UPDATE_PRICE_COL] = price
+
+    return {
+        "prices_matched": len(result.matched),
+        "prices_unmatched": len(result.unmatched),
+        "unmatched_sample": result.unmatched[:UNMATCHED_SAMPLE_SIZE],
+    }
+
+
 def load_scrape_index(scrape_path: Path | None = None) -> dict[str, int]:
     path = scrape_path or SCRAPE_OUTPUT_PATH
     _, rows = read_csv_rows(path)
@@ -70,6 +124,7 @@ def generate_update(
     master_path: Path | None = None,
     scrape_path: Path | None = None,
     output_path: Path | None = None,
+    prices_text: str | None = None,
 ) -> dict:
     master_file = master_path or find_master_path()
     if not master_file:
@@ -109,6 +164,10 @@ def generate_update(
 
         updated_rows.append(updated)
 
+    price_stats = {"prices_matched": 0, "prices_unmatched": 0, "unmatched_sample": []}
+    if prices_text and prices_text.strip():
+        price_stats = apply_prices(fieldnames, updated_rows, prices_text)
+
     STORE.cleanup_other_update_formats(target)
     write_update_rows(target, fieldnames, updated_rows)
 
@@ -119,6 +178,7 @@ def generate_update(
         "zero_stock": zero_stock,
         "output_path": str(target),
         "output_format": target.suffix.lstrip(".").lower(),
+        **price_stats,
     }
 
 

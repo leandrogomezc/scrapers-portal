@@ -172,6 +172,18 @@
               <input type="file" id="solcom-master-file" accept=".xlsx,.csv" class="file-input" />
               <div class="master-status" id="solcom-master-status">Sin archivo maestro subido.</div>
             </div>
+            <div class="update-section">
+              <label class="file-label" for="solcom-prices-text">Lista de precios (opcional) — actualiza «Precio de Venta»</label>
+              <textarea
+                id="solcom-prices-text"
+                class="prices-textarea"
+                rows="6"
+                placeholder="Pega aquí la lista, ej:&#10;SAMSUNG&#10;$ 130…..A16 (128_4) DS&#10;$ 94…..A07 (64_4) DS"
+              ></textarea>
+              <div class="master-status">
+                Se emparejan por nombre y especificaciones. Los productos que no existan en el maestro se ignoran.
+              </div>
+            </div>
             <div class="actions">
               <button type="button" class="btn-secondary generate-update-btn" disabled>
                 Generar actualización
@@ -248,11 +260,17 @@
           generateUrl: "/api/solcom/generate-update",
           masterFileInput: document.getElementById("solcom-master-file"),
           masterStatusEl: document.getElementById("solcom-master-status"),
+          pricesTextInput: document.getElementById("solcom-prices-text"),
           scrapeBadgeEl: document.getElementById("scrape-badge-solcom"),
           card: document.querySelector('[data-update-source="solcom"]'),
           requiresScrape: true,
-          formatDoneMessage: (data) =>
-            `${data.total} SKUs · ${data.with_stock} con stock · ${data.zero_stock} en 0`,
+          formatDoneMessage: (data) => {
+            let msg = `${data.total} SKUs · ${data.with_stock} con stock · ${data.zero_stock} en 0`;
+            if ((data.prices_matched || 0) + (data.prices_unmatched || 0) > 0) {
+              msg += ` · ${data.prices_matched} precios aplicados · ${data.prices_unmatched} ignorados`;
+            }
+            return msg;
+          },
         },
         moderna: {
           statusUrl: "/api/moderna/update-status",
@@ -477,6 +495,11 @@
         generateBtn.disabled = true;
         setStatus(config.card, "running", "Generando archivo de actualización...", true);
 
+        const payload = { token };
+        if (config.pricesTextInput) {
+          payload.prices_text = config.pricesTextInput.value || "";
+        }
+
         try {
           const res = await fetch(config.generateUrl, {
             method: "POST",
@@ -484,7 +507,7 @@
               "Content-Type": "application/json",
               "X-Scrape-Token": token,
             },
-            body: JSON.stringify({ token }),
+            body: JSON.stringify(payload),
           });
           const data = await res.json().catch(() => ({}));
 

@@ -233,6 +233,23 @@ input[type="password"]:focus {
   margin-bottom: 8px;
 }
 
+.prices-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 0.85rem;
+  font-family: inherit;
+  padding: 8px;
+  margin-bottom: 8px;
+  border-radius: 6px;
+  border: 1px solid #e9d5ff;
+  resize: vertical;
+}
+
+.prices-textarea:focus {
+  outline: none;
+  border-color: #a855f7;
+}
+
 .master-status {
   font-size: 0.85rem;
   color: #64748b;

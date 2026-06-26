@@ -91,6 +91,25 @@ Reglas por fila del maestro (comparación por `SKU`):
 
 Si un SKU aparece más de una vez en el scrape, se suman las cantidades.
 
+### Actualización de precio de venta (lista pegada)
+
+En la tarjeta de Solís Comercial hay un campo de texto **opcional** para pegar una lista de precios con el formato:
+
+```
+SAMSUNG
+$ 130…..A16 (128_4) DS
+$ 94…..A07 (64_4) DS
+```
+
+Reglas:
+
+- Cada línea `$ <precio> … <nombre>` actualiza la columna `Precio de Venta` del maestro.
+- El emparejamiento es flexible: se compara el **nombre + especificaciones** (almacenamiento, RAM, conectividad WIFI/LTE, tamaño en MM), no por coincidencia exacta. Ej: `A07 (64_4) DS` empareja con un producto cuyo nombre indique 64 GB de almacenamiento y 4 GB de RAM.
+- Solo se actualizan filas **que ya existen** en el maestro. Si un producto de la lista no existe en el maestro, **se ignora** (no se agrega).
+- Si el match es ambiguo (varios candidatos igual de buenos), no se aplica y se reporta como ignorado.
+- El maestro debe incluir la columna `Precio de Venta` y una columna de nombre (`Nombre del Producto`, `Nombre`, `Descripción` o `Producto`).
+- Si el campo se deja vacío, la generación funciona igual que antes (solo actualiza `Punto Digital`).
+
 ## API
 
 | Método | Ruta |
