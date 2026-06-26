@@ -83,13 +83,18 @@ Flujo para generar un archivo que **solo modifica** la columna `Punto Digital`:
 3. Pulsa **Generar actualización**.
 4. Descarga `solcom_actualizacion.xlsx` e impórtalo en tu sistema.
 
-Reglas por fila del maestro (comparación por `SKU`):
+Reglas por fila del maestro:
 
-| Columna | Si el SKU está en el scrape | Si no está en el scrape |
-|---------|----------------------------|-------------------------|
+| Columna | Relacionado con el scrape | Sin relación |
+|---------|---------------------------|--------------|
 | `Punto Digital` | Cantidad real del inventario Solcom | `0` |
 
-Si un SKU aparece más de una vez en el scrape, se suman las cantidades.
+El inventario se relaciona en dos pasos:
+
+1. Por `SKU` exacto entre el maestro y el scrape.
+2. Si no hay match por `SKU`, por **nombre + `Atributos`** contra el inventario scrapeado (mismo emparejador flexible que los costos).
+
+Cuando una fila se relaciona por nombre y su columna `SKU` está **vacía**, se escribe el `SKU` del scrape para dejarla relacionada a futuro (si ya tiene `SKU`, no se modifica). Si un SKU aparece más de una vez en el scrape, se suman las cantidades.
 
 ### Actualización de costo (lista pegada)
 
@@ -104,10 +109,12 @@ $ 94…..A07 (64_4) DS
 Reglas:
 
 - Cada línea `$ <costo> … <nombre>` actualiza la columna `Costo` del maestro. El valor pegado está en **dólares** y se multiplica por **37.1** antes de escribirse (ej: `340` → `12614.00`).
+- Si la columna `Precio` queda con margen bruto menor al **12%** contra el `Costo`, se sube automáticamente a `round(Costo / 0.88)`. Ej: `Costo=12614.00` requiere `Precio=14334`.
 - El emparejamiento es flexible: se compara el **nombre + especificaciones** (almacenamiento, RAM, conectividad WIFI/LTE, tamaño en MM), no por coincidencia exacta. Ej: `A07 (64_4) DS` empareja con un producto cuyo nombre o columna `Atributos` indique 64 GB de almacenamiento y 4 GB de RAM.
+- El nombre del texto pegado solo se usa para relacionar productos; no se modifica el nombre del maestro.
 - Solo se actualizan filas **que ya existen** en el maestro. Si un producto de la lista no existe en el maestro, **se ignora** (no se agrega).
 - Si el match es ambiguo (varios candidatos igual de buenos), no se aplica y se reporta como ignorado.
-- El maestro debe incluir la columna `Costo` y una columna de nombre (`Nombre del Producto`, `Nombre`, `Descripción` o `Producto`). Opcionalmente una columna `Atributos` para specs fuera del nombre.
+- El maestro debe incluir las columnas `Costo`, `Precio` y una columna de nombre (`Nombre del Producto`, `Nombre`, `Descripción` o `Producto`). Opcionalmente una columna `Atributos` para specs fuera del nombre.
 - Si el campo se deja vacío, la generación funciona igual que antes (solo actualiza `Punto Digital`).
 
 ## API

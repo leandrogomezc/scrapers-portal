@@ -384,3 +384,24 @@ def match_prices(
     return PriceMatchResult(
         prices_by_row=prices_by_row, matched=matched, unmatched=unmatched
     )
+
+
+def match_inventory(
+    entries: list[tuple[str, int, str]],
+    master_index: list[tuple[int, Signature]],
+) -> dict[int, tuple[str, int]]:
+    """Por cada entrada del scrape ``(sku, qty, name)`` halla la mejor fila del maestro.
+
+    Agrega cantidades si varias entradas caen en la misma fila; conserva el primer SKU.
+    """
+    result: dict[int, tuple[str, int]] = {}
+    for sku, qty, name in entries:
+        row_idx = _best_match(build_signature(name), master_index)
+        if row_idx is None:
+            continue
+        if row_idx in result:
+            prev_sku, prev_qty = result[row_idx]
+            result[row_idx] = (prev_sku or sku, prev_qty + qty)
+        else:
+            result[row_idx] = (sku, qty)
+    return result

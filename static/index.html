@@ -181,7 +181,8 @@
                 placeholder="Pega aquí la lista, ej:&#10;SAMSUNG&#10;$ 130…..A16 (128_4) DS&#10;$ 94…..A07 (64_4) DS"
               ></textarea>
               <div class="master-status">
-                Se emparejan por nombre y especificaciones. Los productos que no existan en el maestro se ignoran.
+                Se calcula Costo desde USD x 37.1 y se ajusta Precio si el margen queda menor al 12%.
+                Los productos que no existan en el maestro se ignoran.
               </div>
             </div>
             <div class="actions">
@@ -266,8 +267,17 @@
           requiresScrape: true,
           formatDoneMessage: (data) => {
             let msg = `${data.total} SKUs · ${data.with_stock} con stock · ${data.zero_stock} en 0`;
+            if (data.name_matched) {
+              msg += ` · ${data.name_matched} por nombre`;
+            }
+            if (data.skus_written) {
+              msg += ` · ${data.skus_written} SKU escritos`;
+            }
             if ((data.prices_matched || 0) + (data.prices_unmatched || 0) > 0) {
-              msg += ` · ${data.prices_matched} precios aplicados · ${data.prices_unmatched} ignorados`;
+              msg += ` · ${data.prices_matched} costos aplicados · ${data.prices_unmatched} ignorados`;
+              if (data.sale_prices_adjusted) {
+                msg += ` · ${data.sale_prices_adjusted} precios ajustados al margen mínimo`;
+              }
             }
             return msg;
           },
