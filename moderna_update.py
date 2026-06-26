@@ -139,6 +139,7 @@ def generate_update(
 
     updated_rows: list[dict[str, str]] = []
     matched = 0
+    unmatched = 0
     with_stock = 0
     zero_stock = 0
 
@@ -160,6 +161,7 @@ def generate_update(
         else:
             updated[MASTER_STOCK_COL] = "0"
             zero_stock += 1
+            unmatched += 1
 
         updated_rows.append(updated)
 
@@ -169,6 +171,7 @@ def generate_update(
     return {
         "total": len(updated_rows),
         "matched": matched,
+        "unmatched": unmatched,
         "with_stock": with_stock,
         "zero_stock": zero_stock,
         "output_path": str(target),

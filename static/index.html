@@ -172,7 +172,8 @@
             <h2>Moderna</h2>
             <p class="card-desc">
               Sube la Base de Datos de Moderna y tu Archivo de Actualización. El sistema
-              llenará Costo, Precio y MODERNA según el match SKU = Código.
+              llenará Costo, Precio y MODERNA según el match SKU = Código. Si un SKU no
+              aparece en la Base de Datos, se considera sin inventario y MODERNA queda en 0.
             </p>
             <div class="scrape-badge missing" id="moderna-base-badge">
               Falta subir base de datos.
@@ -248,7 +249,7 @@
           card: document.querySelector('[data-update-source="moderna"]'),
           requiresScrape: false,
           formatDoneMessage: (data) =>
-            `${data.total} SKUs · ${data.matched} actualizados · ${data.with_stock} con stock · ${data.zero_stock} en 0`,
+            `${data.total} SKUs · ${data.matched} en base · ${data.unmatched} sin existir (MODERNA=0) · ${data.with_stock} con stock`,
         },
       };
 
