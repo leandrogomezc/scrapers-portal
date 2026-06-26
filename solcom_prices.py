@@ -146,6 +146,46 @@ def extract_specs(name: str) -> tuple[int | None, int | None, str | None]:
     return storage, ram, connectivity
 
 
+def extract_specs_from_attributes(
+    text: str | None,
+) -> tuple[int | None, int | None, str | None]:
+    """Parse ``clave:valor`` pairs from an attributes column.
+
+    Example input: ``"Almacenamiento:128GB, Memoria RAM:4GB, Conectividad:WIFI"``.
+    Pairs may be separated by commas, semicolons, pipes or newlines.
+    """
+    storage: int | None = None
+    ram: int | None = None
+    connectivity: str | None = None
+
+    if not text:
+        return storage, ram, connectivity
+
+    for pair in re.split(r"[,;|\n]+", text):
+        if ":" not in pair:
+            continue
+        key, _, value = pair.partition(":")
+        key_upper = key.strip().upper()
+        value = value.strip()
+        if not value:
+            continue
+
+        if "RAM" in key_upper:
+            parsed_ram = _leading_int(value)
+            if parsed_ram is not None:
+                ram = parsed_ram
+        elif "ALMACEN" in key_upper or "MEMORIA INTERNA" in key_upper:
+            parsed_storage = _parse_storage_value(value)
+            if parsed_storage is not None:
+                storage = parsed_storage
+        elif "CONECT" in key_upper:
+            detected = _detect_connectivity(value)
+            if detected is not None:
+                connectivity = detected
+
+    return storage, ram, connectivity
+
+
 def _model_tokens(name: str) -> frozenset[str]:
     base = re.sub(r"\([^)]*\)", " ", name).upper()
     base = re.sub(r"[^A-Z0-9+.]", " ", base)
@@ -162,8 +202,22 @@ def _model_tokens(name: str) -> frozenset[str]:
     return frozenset(tokens)
 
 
-def build_signature(name: str, brand: str | None = None) -> Signature:
+def build_signature(
+    name: str, brand: str | None = None, attributes: str | None = None
+) -> Signature:
     storage, ram, connectivity = extract_specs(name)
+
+    if attributes and (storage is None or ram is None or connectivity is None):
+        attr_storage, attr_ram, attr_connectivity = extract_specs_from_attributes(
+            attributes
+        )
+        if storage is None:
+            storage = attr_storage
+        if ram is None:
+            ram = attr_ram
+        if connectivity is None:
+            connectivity = attr_connectivity
+
     return Signature(
         tokens=_model_tokens(name),
         storage=storage,
@@ -240,14 +294,15 @@ def parse_price_text(text: str) -> list[ParsedPrice]:
 
 
 def build_master_index(
-    rows: list[dict[str, str]], name_col: str
+    rows: list[dict[str, str]], name_col: str, attr_col: str | None = None
 ) -> list[tuple[int, Signature]]:
     index: list[tuple[int, Signature]] = []
     for idx, row in enumerate(rows):
         name = (row.get(name_col) or "").strip()
         if not name:
             continue
-        index.append((idx, build_signature(name)))
+        attributes = (row.get(attr_col) or "").strip() if attr_col else None
+        index.append((idx, build_signature(name, attributes=attributes)))
     return index
 
 

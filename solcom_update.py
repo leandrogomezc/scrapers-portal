@@ -21,10 +21,16 @@ STORE = MasterFileStore("solcom_master", "solcom_actualizacion")
 
 MASTER_SKU_COL = "SKU"
 UPDATE_STOCK_COL = "Punto Digital"
-UPDATE_PRICE_COL = "Precio"
+UPDATE_COST_COL = "Costo"
+
+# Los costos pegados vienen en dólares; se convierten a moneda local al escribir.
+USD_TO_LOCAL_RATE = 37.1
 
 # Candidate columns that may hold the product name to match pasted prices against.
 NAME_COLUMN_CANDIDATES = ("Nombre del Producto", "Nombre", "Descripción", "Producto")
+
+# Candidate columns that may hold specs (storage/RAM/connectivity) outside the name.
+ATTRIBUTE_COLUMN_CANDIDATES = ("Atributos", "Atributo", "Especificaciones")
 
 # How many unmatched names to surface back to the UI.
 UNMATCHED_SAMPLE_SIZE = 15
@@ -68,23 +74,39 @@ def _detect_name_column(fieldnames: list[str]) -> str | None:
     return None
 
 
+def _detect_attribute_column(fieldnames: list[str]) -> str | None:
+    for candidate in ATTRIBUTE_COLUMN_CANDIDATES:
+        if candidate in fieldnames:
+            return candidate
+    return None
+
+
+def _convert_cost(price: str) -> str:
+    try:
+        amount = float(price) * USD_TO_LOCAL_RATE
+    except (TypeError, ValueError):
+        return price
+    return f"{amount:.2f}"
+
+
 def apply_prices(
     fieldnames: list[str],
     rows: list[dict[str, str]],
     prices_text: str,
 ) -> dict:
-    """Overwrite ``Precio`` on rows matched from the pasted price list.
+    """Overwrite ``Costo`` on rows matched from the pasted price list.
 
-    Only existing rows are updated; pasted entries without a confident match are
-    ignored (never added as new rows).
+    Pasted values are USD costs and are multiplied by ``USD_TO_LOCAL_RATE``
+    before writing. Only existing rows are updated; pasted entries without a
+    confident match are ignored (never added as new rows).
     """
     parsed = parse_price_text(prices_text)
     if not parsed:
         return {"prices_matched": 0, "prices_unmatched": 0, "unmatched_sample": []}
 
-    if UPDATE_PRICE_COL not in fieldnames:
+    if UPDATE_COST_COL not in fieldnames:
         raise MasterFileError(
-            f"El maestro no tiene la columna requerida '{UPDATE_PRICE_COL}'."
+            f"El maestro no tiene la columna requerida '{UPDATE_COST_COL}'."
         )
 
     name_col = _detect_name_column(fieldnames)
@@ -94,11 +116,12 @@ def apply_prices(
             f"(se buscó: {', '.join(NAME_COLUMN_CANDIDATES)})."
         )
 
-    master_index = build_master_index(rows, name_col)
+    attr_col = _detect_attribute_column(fieldnames)
+    master_index = build_master_index(rows, name_col, attr_col)
     result = match_prices(parsed, master_index)
 
     for row_idx, price in result.prices_by_row.items():
-        rows[row_idx][UPDATE_PRICE_COL] = price
+        rows[row_idx][UPDATE_COST_COL] = _convert_cost(price)
 
     return {
         "prices_matched": len(result.matched),
