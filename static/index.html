@@ -11,7 +11,8 @@
       <header class="portal-header">
         <h1>Portal de Scrapers</h1>
         <p class="subtitle">
-          Descarga catálogos de Beauty Depot, Pinturas Biotech, Molvu e inventario de Solís Comercial.
+          Descarga catálogos e inventarios, o genera archivos de actualización parcial
+          para Beauty Depot y Solís Comercial.
         </p>
         <label for="token">Token de acceso (opcional)</label>
         <input
@@ -22,100 +23,151 @@
         />
       </header>
 
-      <div class="portal-grid">
-        <section class="card card-beautydepot" data-source="beautydepot">
-          <h2>Beauty Depot</h2>
-          <p class="card-desc">
-            Catálogo completo de beautydepot.com.gt (~2045 productos). Sube tu Excel
-            maestro para generar actualización de Precio e inventario Beauty Depot.
-          </p>
-          <div class="update-section">
-            <label class="file-label" for="master-file">Archivo maestro (.xlsx) — SKU, Precio, Beauty Depot</label>
-            <input type="file" id="master-file" accept=".xlsx,.csv" class="file-input" />
-            <div class="master-status" id="master-status">Sin archivo maestro subido.</div>
-          </div>
-          <div class="actions">
-            <button type="button" class="btn-primary run-btn">Ejecutar scrape</button>
-            <button type="button" class="btn-secondary generate-update-btn" disabled>
-              Generar actualización
-            </button>
-            <a class="download-link hidden" href="/download/beautydepot/csv">
-              <button type="button" class="btn-secondary">Descargar CSV catálogo</button>
-            </a>
-            <a class="update-download-link hidden" href="/download/beautydepot/update-csv">
-              <button type="button" class="btn-secondary">Descargar actualización</button>
-            </a>
-          </div>
-          <div class="status">
-            <div class="status-label">Estado</div>
-            <div class="status-message">Listo para ejecutar.</div>
-          </div>
-        </section>
+      <nav class="tab-bar" role="tablist">
+        <button type="button" class="tab-btn active" data-tab="scrape" role="tab" aria-selected="true">
+          Scrape
+        </button>
+        <button type="button" class="tab-btn" data-tab="actualizacion" role="tab" aria-selected="false">
+          Actualización
+        </button>
+      </nav>
 
-        <section class="card card-biotech" data-source="biotech">
-          <h2>Pinturas Biotech</h2>
-          <p class="card-desc">
-            Catálogo completo de pinturasbiotech.com (Odoo). SKU, nombre, descripción,
-            imagen y precio de venta.
-          </p>
-          <div class="actions">
-            <button type="button" class="btn-primary run-btn">Ejecutar scrape</button>
-            <a class="download-link hidden" href="/download/biotech/csv">
-              <button type="button" class="btn-secondary">Descargar CSV catálogo</button>
-            </a>
-          </div>
-          <div class="status">
-            <div class="status-label">Estado</div>
-            <div class="status-message">Listo para ejecutar.</div>
-          </div>
-        </section>
+      <div id="tab-scrape" class="tab-panel active" role="tabpanel">
+        <div class="portal-grid">
+          <section class="card card-beautydepot" data-source="beautydepot">
+            <h2>Beauty Depot</h2>
+            <p class="card-desc">
+              Catálogo completo de beautydepot.com.gt (~2045 productos). SKU, nombre,
+              precio e inventario.
+            </p>
+            <div class="actions">
+              <button type="button" class="btn-primary run-btn">Ejecutar scrape</button>
+              <a class="download-link hidden" href="/download/beautydepot/csv">
+                <button type="button" class="btn-secondary">Descargar CSV catálogo</button>
+              </a>
+            </div>
+            <div class="status">
+              <div class="status-label">Estado</div>
+              <div class="status-message">Listo para ejecutar.</div>
+            </div>
+          </section>
 
-        <section class="card card-molvu" data-source="molvu">
-          <h2>Molvu</h2>
-          <p class="card-desc">
-            Catálogo completo de molvu.com.gt (Shopify). SKU, nombre, descripción,
-            imagen y precio de venta.
-          </p>
-          <div class="actions">
-            <button type="button" class="btn-primary run-btn">Ejecutar scrape</button>
-            <a class="download-link hidden" href="/download/molvu/csv">
-              <button type="button" class="btn-secondary">Descargar CSV catálogo</button>
-            </a>
-          </div>
-          <div class="status">
-            <div class="status-label">Estado</div>
-            <div class="status-message">Listo para ejecutar.</div>
-          </div>
-        </section>
+          <section class="card card-biotech" data-source="biotech">
+            <h2>Pinturas Biotech</h2>
+            <p class="card-desc">
+              Catálogo completo de pinturasbiotech.com (Odoo). SKU, nombre, descripción,
+              imagen y precio de venta.
+            </p>
+            <div class="actions">
+              <button type="button" class="btn-primary run-btn">Ejecutar scrape</button>
+              <a class="download-link hidden" href="/download/biotech/csv">
+                <button type="button" class="btn-secondary">Descargar CSV catálogo</button>
+              </a>
+            </div>
+            <div class="status">
+              <div class="status-label">Estado</div>
+              <div class="status-message">Listo para ejecutar.</div>
+            </div>
+          </section>
 
-        <section class="card card-solcom" data-source="solcom">
-          <h2>Solís Comercial</h2>
-          <p class="card-desc">
-            Inventario de solcom-erp.vercel.app. Sube tu Excel maestro para actualizar
-            la columna DataShop con la cantidad real del scrape.
-          </p>
-          <div class="update-section">
-            <label class="file-label" for="solcom-master-file">Archivo maestro (.xlsx) — SKU, DataShop</label>
-            <input type="file" id="solcom-master-file" accept=".xlsx,.csv" class="file-input" />
-            <div class="master-status" id="solcom-master-status">Sin archivo maestro subido.</div>
-          </div>
-          <div class="actions">
-            <button type="button" class="btn-primary run-btn">Descargar inventario</button>
-            <button type="button" class="btn-secondary generate-update-btn" disabled>
-              Generar actualización
-            </button>
-            <a class="download-link hidden" href="/download/solcom/csv">
-              <button type="button" class="btn-secondary">Descargar CSV inventario</button>
-            </a>
-            <a class="update-download-link hidden" href="/download/solcom/update-csv">
-              <button type="button" class="btn-secondary">Descargar actualización</button>
-            </a>
-          </div>
-          <div class="status">
-            <div class="status-label">Estado</div>
-            <div class="status-message">Listo para ejecutar.</div>
-          </div>
-        </section>
+          <section class="card card-molvu" data-source="molvu">
+            <h2>Molvu</h2>
+            <p class="card-desc">
+              Catálogo completo de molvu.com.gt (Shopify). SKU, nombre, descripción,
+              imagen y precio de venta.
+            </p>
+            <div class="actions">
+              <button type="button" class="btn-primary run-btn">Ejecutar scrape</button>
+              <a class="download-link hidden" href="/download/molvu/csv">
+                <button type="button" class="btn-secondary">Descargar CSV catálogo</button>
+              </a>
+            </div>
+            <div class="status">
+              <div class="status-label">Estado</div>
+              <div class="status-message">Listo para ejecutar.</div>
+            </div>
+          </section>
+
+          <section class="card card-solcom" data-source="solcom">
+            <h2>Solís Comercial</h2>
+            <p class="card-desc">
+              Inventario de solcom-erp.vercel.app. SKU, nombre y cantidad disponible
+              en bodega.
+            </p>
+            <div class="actions">
+              <button type="button" class="btn-primary run-btn">Descargar inventario</button>
+              <a class="download-link hidden" href="/download/solcom/csv">
+                <button type="button" class="btn-secondary">Descargar CSV inventario</button>
+              </a>
+            </div>
+            <div class="status">
+              <div class="status-label">Estado</div>
+              <div class="status-message">Listo para ejecutar.</div>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <div id="tab-actualizacion" class="tab-panel" role="tabpanel">
+        <div class="portal-grid">
+          <section class="card card-beautydepot" data-update-source="beautydepot">
+            <h2>Beauty Depot</h2>
+            <p class="card-desc">
+              Compara tu Excel maestro con el catálogo scrapeado y genera un archivo
+              de actualización de Precio e inventario Beauty Depot.
+            </p>
+            <div class="scrape-badge missing" id="scrape-badge-beautydepot">
+              Falta ejecutar scrape.
+              <button type="button" class="tab-link">Ir a Scrape</button>
+            </div>
+            <div class="update-section">
+              <label class="file-label" for="master-file">Archivo maestro (.xlsx) — SKU, Precio, Beauty Depot</label>
+              <input type="file" id="master-file" accept=".xlsx,.csv" class="file-input" />
+              <div class="master-status" id="master-status">Sin archivo maestro subido.</div>
+            </div>
+            <div class="actions">
+              <button type="button" class="btn-secondary generate-update-btn" disabled>
+                Generar actualización
+              </button>
+              <a class="update-download-link hidden" href="/download/beautydepot/update-csv">
+                <button type="button" class="btn-secondary">Descargar actualización</button>
+              </a>
+            </div>
+            <div class="status">
+              <div class="status-label">Estado</div>
+              <div class="status-message">Listo para generar actualización.</div>
+            </div>
+          </section>
+
+          <section class="card card-solcom" data-update-source="solcom">
+            <h2>Solís Comercial</h2>
+            <p class="card-desc">
+              Compara tu Excel maestro con el inventario scrapeado y actualiza la
+              columna DataShop con la cantidad real.
+            </p>
+            <div class="scrape-badge missing" id="scrape-badge-solcom">
+              Falta ejecutar scrape.
+              <button type="button" class="tab-link">Ir a Scrape</button>
+            </div>
+            <div class="update-section">
+              <label class="file-label" for="solcom-master-file">Archivo maestro (.xlsx) — SKU, DataShop</label>
+              <input type="file" id="solcom-master-file" accept=".xlsx,.csv" class="file-input" />
+              <div class="master-status" id="solcom-master-status">Sin archivo maestro subido.</div>
+            </div>
+            <div class="actions">
+              <button type="button" class="btn-secondary generate-update-btn" disabled>
+                Generar actualización
+              </button>
+              <a class="update-download-link hidden" href="/download/solcom/update-csv">
+                <button type="button" class="btn-secondary">Descargar actualización</button>
+              </a>
+            </div>
+            <div class="status">
+              <div class="status-label">Estado</div>
+              <div class="status-message">Listo para generar actualización.</div>
+            </div>
+          </section>
+        </div>
       </div>
     </div>
 
@@ -123,28 +175,36 @@
       const TOKEN_KEY = "portal_scrape_token";
       const tokenInput = document.getElementById("token");
       const pollTimers = {};
-      const beautyCard = document.querySelector('.card[data-source="beautydepot"]');
-      const masterFileInput = document.getElementById("master-file");
-      const masterStatusEl = document.getElementById("master-status");
-      const generateUpdateBtn = beautyCard.querySelector(".generate-update-btn");
-      const updateDownloadLink = beautyCard.querySelector(".update-download-link");
+      const scrapePanel = document.getElementById("tab-scrape");
 
-      const solcomCard = document.querySelector('.card[data-source="solcom"]');
-      const solcomMasterFileInput = document.getElementById("solcom-master-file");
-      const solcomMasterStatusEl = document.getElementById("solcom-master-status");
-      const solcomGenerateUpdateBtn = solcomCard.querySelector(".generate-update-btn");
-      const solcomUpdateDownloadLink = solcomCard.querySelector(".update-download-link");
-
-      let updateState = {
-        masterUploaded: false,
-        scrapeAvailable: false,
-        updateAvailable: false,
+      const UPDATE_SOURCES = {
+        beautydepot: {
+          statusUrl: "/api/beautydepot/update-status",
+          uploadUrl: "/api/beautydepot/upload-master",
+          generateUrl: "/api/beautydepot/generate-update",
+          masterFileInput: document.getElementById("master-file"),
+          masterStatusEl: document.getElementById("master-status"),
+          scrapeBadgeEl: document.getElementById("scrape-badge-beautydepot"),
+          card: document.querySelector('[data-update-source="beautydepot"]'),
+          formatDoneMessage: (data) =>
+            `${data.total} SKUs en maestro · ${data.stock_10} con stock 10 · ${data.stock_0} con stock 0`,
+        },
+        solcom: {
+          statusUrl: "/api/solcom/update-status",
+          uploadUrl: "/api/solcom/upload-master",
+          generateUrl: "/api/solcom/generate-update",
+          masterFileInput: document.getElementById("solcom-master-file"),
+          masterStatusEl: document.getElementById("solcom-master-status"),
+          scrapeBadgeEl: document.getElementById("scrape-badge-solcom"),
+          card: document.querySelector('[data-update-source="solcom"]'),
+          formatDoneMessage: (data) =>
+            `${data.total} SKUs · ${data.with_stock} con stock · ${data.zero_stock} en 0`,
+        },
       };
 
-      let solcomUpdateState = {
-        masterUploaded: false,
-        scrapeAvailable: false,
-        updateAvailable: false,
+      const updateStates = {
+        beautydepot: { masterUploaded: false, scrapeAvailable: false, updateAvailable: false },
+        solcom: { masterUploaded: false, scrapeAvailable: false, updateAvailable: false },
       };
 
       const savedToken = sessionStorage.getItem(TOKEN_KEY);
@@ -156,47 +216,96 @@
         return token;
       }
 
-      function showUpdateDownload(show) {
-        updateDownloadLink.classList.toggle("hidden", !show);
-      }
-
-      function refreshGenerateButton() {
-        generateUpdateBtn.disabled = !(
-          updateState.masterUploaded && updateState.scrapeAvailable
-        );
-      }
-
-      async function refreshUpdateStatus() {
-        try {
-          const res = await fetch("/api/beautydepot/update-status");
-          const data = await res.json();
-          updateState.masterUploaded = Boolean(data.master_uploaded);
-          updateState.scrapeAvailable = Boolean(data.scrape_available);
-          updateState.updateAvailable = Boolean(data.update_available);
-
-          if (data.master_uploaded && data.master_rows != null) {
-            const fmt = data.master_format ? data.master_format.toUpperCase() : "XLSX";
-            masterStatusEl.textContent = `Archivo maestro (${fmt}) cargado: ${data.master_rows} filas.`;
-          } else {
-            masterStatusEl.textContent = "Sin archivo maestro subido.";
-          }
-
-          showUpdateDownload(updateState.updateAvailable);
-          refreshGenerateButton();
-        } catch (err) {
-          masterStatusEl.textContent = "No se pudo consultar el estado del maestro.";
+      function switchTab(tabId) {
+        document.querySelectorAll(".tab-btn").forEach((btn) => {
+          const isActive = btn.dataset.tab === tabId;
+          btn.classList.toggle("active", isActive);
+          btn.setAttribute("aria-selected", isActive ? "true" : "false");
+        });
+        document.querySelectorAll(".tab-panel").forEach((panel) => {
+          panel.classList.toggle("active", panel.id === `tab-${tabId}`);
+        });
+        if (tabId === "actualizacion") {
+          refreshAllUpdateStatus();
         }
       }
 
-      async function uploadMasterFile(file) {
+      document.querySelectorAll(".tab-btn").forEach((btn) => {
+        btn.addEventListener("click", () => switchTab(btn.dataset.tab));
+      });
+
+      document.querySelectorAll(".scrape-badge .tab-link").forEach((link) => {
+        link.addEventListener("click", () => switchTab("scrape"));
+      });
+
+      function updateScrapeBadge(sourceKey, available) {
+        const badge = UPDATE_SOURCES[sourceKey].scrapeBadgeEl;
+        badge.classList.toggle("available", available);
+        badge.classList.toggle("missing", !available);
+        if (available) {
+          badge.innerHTML = "Catálogo disponible";
+        } else {
+          badge.innerHTML =
+            'Falta ejecutar scrape. <button type="button" class="tab-link">Ir a Scrape</button>';
+          badge.querySelector(".tab-link").addEventListener("click", () => switchTab("scrape"));
+        }
+      }
+
+      function refreshGenerateButton(sourceKey) {
+        const config = UPDATE_SOURCES[sourceKey];
+        const state = updateStates[sourceKey];
+        config.card.querySelector(".generate-update-btn").disabled = !(
+          state.masterUploaded && state.scrapeAvailable
+        );
+      }
+
+      function showUpdateDownload(sourceKey, show) {
+        UPDATE_SOURCES[sourceKey].card
+          .querySelector(".update-download-link")
+          .classList.toggle("hidden", !show);
+      }
+
+      async function refreshUpdateStatus(sourceKey) {
+        const config = UPDATE_SOURCES[sourceKey];
+        const state = updateStates[sourceKey];
+
+        try {
+          const res = await fetch(config.statusUrl);
+          const data = await res.json();
+          state.masterUploaded = Boolean(data.master_uploaded);
+          state.scrapeAvailable = Boolean(data.scrape_available);
+          state.updateAvailable = Boolean(data.update_available);
+
+          if (data.master_uploaded && data.master_rows != null) {
+            const fmt = data.master_format ? data.master_format.toUpperCase() : "XLSX";
+            config.masterStatusEl.textContent = `Archivo maestro (${fmt}) cargado: ${data.master_rows} filas.`;
+          } else {
+            config.masterStatusEl.textContent = "Sin archivo maestro subido.";
+          }
+
+          updateScrapeBadge(sourceKey, state.scrapeAvailable);
+          showUpdateDownload(sourceKey, state.updateAvailable);
+          refreshGenerateButton(sourceKey);
+        } catch (err) {
+          config.masterStatusEl.textContent = "No se pudo consultar el estado del maestro.";
+        }
+      }
+
+      function refreshAllUpdateStatus() {
+        Object.keys(UPDATE_SOURCES).forEach(refreshUpdateStatus);
+      }
+
+      async function uploadMasterFile(sourceKey, file) {
+        const config = UPDATE_SOURCES[sourceKey];
+        const state = updateStates[sourceKey];
         const token = getToken();
         const formData = new FormData();
         formData.append("file", file);
 
-        masterStatusEl.textContent = "Subiendo archivo maestro...";
+        config.masterStatusEl.textContent = "Subiendo archivo maestro...";
 
         try {
-          const res = await fetch("/api/beautydepot/upload-master", {
+          const res = await fetch(config.uploadUrl, {
             method: "POST",
             headers: { "X-Scrape-Token": token },
             body: formData,
@@ -204,31 +313,35 @@
           const data = await res.json().catch(() => ({}));
 
           if (res.status === 401) {
-            masterStatusEl.textContent = "Token inválido. Verifica tu clave de acceso.";
+            config.masterStatusEl.textContent = "Token inválido. Verifica tu clave de acceso.";
             return;
           }
 
           if (!res.ok) {
-            masterStatusEl.textContent = data.error || "Error al subir el archivo maestro.";
+            config.masterStatusEl.textContent = data.error || "Error al subir el archivo maestro.";
             return;
           }
 
           const fmt = data.format ? data.format.toUpperCase() : "XLSX";
-          masterStatusEl.textContent = `Archivo maestro (${fmt}) cargado: ${data.master_rows} filas.`;
-          updateState.masterUploaded = true;
-          refreshGenerateButton();
+          config.masterStatusEl.textContent = `Archivo maestro (${fmt}) cargado: ${data.master_rows} filas.`;
+          state.masterUploaded = true;
+          refreshGenerateButton(sourceKey);
         } catch (err) {
-          masterStatusEl.textContent = "Error de conexión al subir: " + err.message;
+          config.masterStatusEl.textContent = "Error de conexión al subir: " + err.message;
         }
       }
 
-      async function generateUpdate() {
+      async function generateUpdate(sourceKey) {
+        const config = UPDATE_SOURCES[sourceKey];
+        const state = updateStates[sourceKey];
         const token = getToken();
-        generateUpdateBtn.disabled = true;
-        setStatus(beautyCard, "running", "Generando archivo de actualización...", true);
+        const generateBtn = config.card.querySelector(".generate-update-btn");
+
+        generateBtn.disabled = true;
+        setStatus(config.card, "running", "Generando archivo de actualización...", true);
 
         try {
-          const res = await fetch("/api/beautydepot/generate-update", {
+          const res = await fetch(config.generateUrl, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -239,156 +352,38 @@
           const data = await res.json().catch(() => ({}));
 
           if (res.status === 401) {
-            setStatus(beautyCard, "error", "Token inválido. Verifica tu clave de acceso.");
-            refreshGenerateButton();
+            setStatus(config.card, "error", "Token inválido. Verifica tu clave de acceso.");
+            refreshGenerateButton(sourceKey);
             return;
           }
 
           if (!res.ok) {
-            setStatus(beautyCard, "error", data.error || "No se pudo generar la actualización.");
-            refreshGenerateButton();
+            setStatus(config.card, "error", data.error || "No se pudo generar la actualización.");
+            refreshGenerateButton(sourceKey);
             return;
           }
 
-          updateState.updateAvailable = true;
-          showUpdateDownload(true);
-          setStatus(
-            beautyCard,
-            "done",
-            `${data.total} SKUs en maestro · ${data.stock_10} con stock 10 · ${data.stock_0} con stock 0`
-          );
+          state.updateAvailable = true;
+          showUpdateDownload(sourceKey, true);
+          setStatus(config.card, "done", config.formatDoneMessage(data));
         } catch (err) {
-          setStatus(beautyCard, "error", "Error de conexión: " + err.message);
+          setStatus(config.card, "error", "Error de conexión: " + err.message);
         } finally {
-          refreshGenerateButton();
+          refreshGenerateButton(sourceKey);
         }
       }
 
-      masterFileInput.addEventListener("change", () => {
-        const file = masterFileInput.files[0];
-        if (file) uploadMasterFile(file);
+      Object.entries(UPDATE_SOURCES).forEach(([sourceKey, config]) => {
+        config.masterFileInput.addEventListener("change", () => {
+          const file = config.masterFileInput.files[0];
+          if (file) uploadMasterFile(sourceKey, file);
+        });
+        config.card.querySelector(".generate-update-btn").addEventListener("click", () => {
+          generateUpdate(sourceKey);
+        });
       });
 
-      generateUpdateBtn.addEventListener("click", generateUpdate);
-
-      refreshUpdateStatus();
-
-      function showSolcomUpdateDownload(show) {
-        solcomUpdateDownloadLink.classList.toggle("hidden", !show);
-      }
-
-      function refreshSolcomGenerateButton() {
-        solcomGenerateUpdateBtn.disabled = !(
-          solcomUpdateState.masterUploaded && solcomUpdateState.scrapeAvailable
-        );
-      }
-
-      async function refreshSolcomUpdateStatus() {
-        try {
-          const res = await fetch("/api/solcom/update-status");
-          const data = await res.json();
-          solcomUpdateState.masterUploaded = Boolean(data.master_uploaded);
-          solcomUpdateState.scrapeAvailable = Boolean(data.scrape_available);
-          solcomUpdateState.updateAvailable = Boolean(data.update_available);
-
-          if (data.master_uploaded && data.master_rows != null) {
-            const fmt = data.master_format ? data.master_format.toUpperCase() : "XLSX";
-            solcomMasterStatusEl.textContent = `Archivo maestro (${fmt}) cargado: ${data.master_rows} filas.`;
-          } else {
-            solcomMasterStatusEl.textContent = "Sin archivo maestro subido.";
-          }
-
-          showSolcomUpdateDownload(solcomUpdateState.updateAvailable);
-          refreshSolcomGenerateButton();
-        } catch (err) {
-          solcomMasterStatusEl.textContent = "No se pudo consultar el estado del maestro.";
-        }
-      }
-
-      async function uploadSolcomMasterFile(file) {
-        const token = getToken();
-        const formData = new FormData();
-        formData.append("file", file);
-
-        solcomMasterStatusEl.textContent = "Subiendo archivo maestro...";
-
-        try {
-          const res = await fetch("/api/solcom/upload-master", {
-            method: "POST",
-            headers: { "X-Scrape-Token": token },
-            body: formData,
-          });
-          const data = await res.json().catch(() => ({}));
-
-          if (res.status === 401) {
-            solcomMasterStatusEl.textContent = "Token inválido. Verifica tu clave de acceso.";
-            return;
-          }
-
-          if (!res.ok) {
-            solcomMasterStatusEl.textContent = data.error || "Error al subir el archivo maestro.";
-            return;
-          }
-
-          const fmt = data.format ? data.format.toUpperCase() : "XLSX";
-          solcomMasterStatusEl.textContent = `Archivo maestro (${fmt}) cargado: ${data.master_rows} filas.`;
-          solcomUpdateState.masterUploaded = true;
-          refreshSolcomGenerateButton();
-        } catch (err) {
-          solcomMasterStatusEl.textContent = "Error de conexión al subir: " + err.message;
-        }
-      }
-
-      async function generateSolcomUpdate() {
-        const token = getToken();
-        solcomGenerateUpdateBtn.disabled = true;
-        setStatus(solcomCard, "running", "Generando archivo de actualización...", true);
-
-        try {
-          const res = await fetch("/api/solcom/generate-update", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Scrape-Token": token,
-            },
-            body: JSON.stringify({ token }),
-          });
-          const data = await res.json().catch(() => ({}));
-
-          if (res.status === 401) {
-            setStatus(solcomCard, "error", "Token inválido. Verifica tu clave de acceso.");
-            refreshSolcomGenerateButton();
-            return;
-          }
-
-          if (!res.ok) {
-            setStatus(solcomCard, "error", data.error || "No se pudo generar la actualización.");
-            refreshSolcomGenerateButton();
-            return;
-          }
-
-          solcomUpdateState.updateAvailable = true;
-          showSolcomUpdateDownload(true);
-          setStatus(
-            solcomCard,
-            "done",
-            `${data.total} SKUs · ${data.with_stock} con stock · ${data.zero_stock} en 0`
-          );
-        } catch (err) {
-          setStatus(solcomCard, "error", "Error de conexión: " + err.message);
-        } finally {
-          refreshSolcomGenerateButton();
-        }
-      }
-
-      solcomMasterFileInput.addEventListener("change", () => {
-        const file = solcomMasterFileInput.files[0];
-        if (file) uploadSolcomMasterFile(file);
-      });
-
-      solcomGenerateUpdateBtn.addEventListener("click", generateSolcomUpdate);
-
-      refreshSolcomUpdateStatus();
+      refreshAllUpdateStatus();
 
       function escapeHtml(text) {
         const div = document.createElement("div");
@@ -406,7 +401,8 @@
       }
 
       function setStatus(card, status, message, showSpinner = false) {
-        const { statusBox, statusMessage } = getCardElements(card);
+        const statusBox = card.querySelector(".status");
+        const statusMessage = card.querySelector(".status-message");
         statusBox.className = "status";
         if (status && status !== "idle") statusBox.classList.add(status);
         statusMessage.innerHTML = showSpinner
@@ -416,8 +412,7 @@
 
       function setRunning(card, isRunning) {
         getCardElements(card).runBtn.disabled = isRunning;
-        tokenInput.disabled =
-          document.querySelectorAll(".run-btn:disabled").length > 0;
+        tokenInput.disabled = scrapePanel.querySelectorAll(".run-btn:disabled").length > 0;
       }
 
       function showDownload(card, show) {
@@ -443,12 +438,8 @@
           if (data.status === "done") {
             setStatus(card, "done", data.message || `Completado: ${data.rows} productos`);
             showDownload(card, true);
-            if (source === "beautydepot") {
-              updateState.scrapeAvailable = true;
-              refreshGenerateButton();
-            } else if (source === "solcom") {
-              solcomUpdateState.scrapeAvailable = true;
-              refreshSolcomGenerateButton();
+            if (source === "beautydepot" || source === "solcom") {
+              refreshUpdateStatus(source);
             }
           } else if (data.status === "error") {
             setStatus(card, "error", data.message || "Error desconocido");
@@ -456,12 +447,8 @@
           } else {
             setStatus(card, "idle", "Listo para ejecutar.");
             showDownload(card, data.output_path != null);
-            if (source === "beautydepot" && data.output_path != null) {
-              updateState.scrapeAvailable = true;
-              refreshGenerateButton();
-            } else if (source === "solcom" && data.output_path != null) {
-              solcomUpdateState.scrapeAvailable = true;
-              refreshSolcomGenerateButton();
+            if ((source === "beautydepot" || source === "solcom") && data.output_path != null) {
+              refreshUpdateStatus(source);
             }
           }
         } catch (err) {
@@ -513,7 +500,7 @@
         }
       }
 
-      document.querySelectorAll(".card[data-source]").forEach((card) => {
+      scrapePanel.querySelectorAll(".card[data-source]").forEach((card) => {
         const source = card.dataset.source;
         card.querySelector(".run-btn").addEventListener("click", () => startScrape(source, card));
         pollStatus(source, card);
