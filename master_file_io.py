@@ -68,14 +68,43 @@ def cell_to_str(value: object) -> str:
     return str(value).strip()
 
 
+def _normalize_csv_fieldname(name: str | None) -> str:
+    return (name or "").lstrip("\ufeff").strip()
+
+
+def _csv_encoding_candidates(path: Path) -> list[str]:
+    bom = path.read_bytes()[:4]
+    if bom.startswith(b"\xff\xfe"):
+        return ["utf-16-le", "utf-16"]
+    if bom.startswith(b"\xfe\xff"):
+        return ["utf-16-be", "utf-16"]
+    return ["utf-8-sig", "cp1252", "latin-1"]
+
+
 def read_csv_rows(path: Path) -> tuple[list[str], list[dict[str, str]]]:
-    with path.open(encoding="utf-8-sig", newline="") as handle:
-        reader = csv.DictReader(handle)
-        if not reader.fieldnames:
-            raise MasterFileError("El archivo no tiene encabezados.")
-        fieldnames = list(reader.fieldnames)
-        rows = [{key: (row.get(key) or "") for key in fieldnames} for row in reader]
-    return fieldnames, rows
+    last_error: UnicodeDecodeError | None = None
+    for encoding in _csv_encoding_candidates(path):
+        try:
+            with path.open(encoding=encoding, newline="") as handle:
+                reader = csv.DictReader(handle)
+                if not reader.fieldnames:
+                    raise MasterFileError("El archivo no tiene encabezados.")
+                raw_fieldnames = list(reader.fieldnames)
+                fieldnames = [_normalize_csv_fieldname(name) for name in raw_fieldnames]
+                rows = []
+                for row in reader:
+                    rows.append(
+                        {
+                            fieldnames[i]: (row.get(raw_fieldnames[i]) or "")
+                            for i in range(len(fieldnames))
+                        }
+                    )
+            return fieldnames, rows
+        except UnicodeDecodeError as exc:
+            last_error = exc
+    raise MasterFileError(
+        "No se pudo leer el CSV. Verifica la codificación del archivo."
+    ) from last_error
 
 
 def read_xlsx_rows(path: Path) -> tuple[list[str], list[dict[str, str]]]:
