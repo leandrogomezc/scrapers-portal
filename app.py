@@ -356,8 +356,14 @@ def moderna_upload_base():
     if not _is_authorized():
         return jsonify({"error": "Token inválido o faltante"}), 401
 
+    upload = request.files.get("file")
+    if not upload or not upload.filename:
+        return jsonify({"error": "Debes subir la Base de Datos (.csv)."}), 400
+    if not upload.filename.lower().endswith(".csv"):
+        return jsonify({"error": "La Base de Datos debe ser .csv."}), 400
+
     payload, error = _upload_master_file(
-        request.files.get("file"),
+        upload,
         validate_moderna_base_columns,
         save_moderna_base_upload,
     )

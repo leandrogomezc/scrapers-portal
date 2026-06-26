@@ -178,8 +178,8 @@
               Falta subir base de datos.
             </div>
             <div class="update-section">
-              <label class="file-label" for="moderna-base-file">Base de Datos (.xlsx) — Código, Precio, Precio MAP, Stock</label>
-              <input type="file" id="moderna-base-file" accept=".xlsx,.csv" class="file-input" />
+              <label class="file-label" for="moderna-base-file">Base de Datos (.csv) — Código, Precio, Precio MAP, Stock</label>
+              <input type="file" id="moderna-base-file" accept=".csv" class="file-input" />
               <div class="master-status" id="moderna-base-status">Sin base de datos subida.</div>
             </div>
             <div class="update-section">
@@ -341,8 +341,7 @@
           if (config.requiresScrape === false) {
             state.baseUploaded = Boolean(data.base_uploaded);
             if (data.base_uploaded && data.base_rows != null) {
-              const fmt = data.base_format ? data.base_format.toUpperCase() : "XLSX";
-              config.baseStatusEl.textContent = `Base de datos (${fmt}) cargada: ${data.base_rows} filas.`;
+              config.baseStatusEl.textContent = `Base de datos (CSV) cargada: ${data.base_rows} filas.`;
             } else {
               config.baseStatusEl.textContent = "Sin base de datos subida.";
             }
@@ -403,7 +402,7 @@
             return;
           }
 
-          const fmt = data.format ? data.format.toUpperCase() : "XLSX";
+          const fmt = data.format ? data.format.toUpperCase() : "CSV";
           config.baseStatusEl.textContent = `Base de datos (${fmt}) cargada: ${data.master_rows} filas.`;
           state.baseUploaded = true;
           updateBaseBadge(sourceKey, true);

@@ -7,7 +7,6 @@ import shutil
 from pathlib import Path
 
 from master_file_io import (
-    MASTER_EXTENSIONS,
     OUTPUT_DIR,
     MasterFileError,
     MasterFileStore,
@@ -18,6 +17,7 @@ from master_file_io import (
 )
 
 BASE_BASENAME = "moderna_base"
+BASE_EXTENSION = ".csv"
 STORE = MasterFileStore("moderna_plantilla", "moderna_actualizacion")
 
 BASE_CODIGO_COL = "Código"
@@ -44,27 +44,21 @@ REQUIRED_MASTER_COLUMNS = (
 )
 
 
-def _base_path_for_ext(ext: str) -> Path:
-    return OUTPUT_DIR / f"{BASE_BASENAME}{ext}"
+def _base_path() -> Path:
+    return OUTPUT_DIR / f"{BASE_BASENAME}{BASE_EXTENSION}"
 
 
 def find_base_path() -> Path | None:
-    for ext in MASTER_EXTENSIONS:
-        path = _base_path_for_ext(ext)
-        if path.exists():
-            return path
-    return None
+    path = _base_path()
+    return path if path.exists() else None
 
 
 def save_base_upload(source_path: Path, original_filename: str) -> Path:
     suffix = Path(original_filename).suffix.lower()
-    if suffix not in MASTER_EXTENSIONS:
-        raise MasterFileError("Formato no soportado. Usa .xlsx o .csv.")
+    if suffix != BASE_EXTENSION:
+        raise MasterFileError("La Base de Datos debe ser .csv.")
 
-    for ext in MASTER_EXTENSIONS:
-        _base_path_for_ext(ext).unlink(missing_ok=True)
-
-    target = _base_path_for_ext(suffix)
+    target = _base_path()
     target.parent.mkdir(parents=True, exist_ok=True)
     shutil.move(str(source_path), str(target))
     return target
