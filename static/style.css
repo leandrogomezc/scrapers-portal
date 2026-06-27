@@ -189,6 +189,24 @@ input[type="password"]:focus {
   border-top-color: #0891b2;
 }
 
+.card-laincreible {
+  border-top-color: #dc2626;
+}
+
+.card-laincreible .btn-primary {
+  background: #dc2626;
+  color: #fff;
+}
+
+.card-laincreible .btn-primary:not(:disabled):hover {
+  background: #b91c1c;
+}
+
+.card-laincreible .spinner {
+  border-color: #fca5a5;
+  border-top-color: #dc2626;
+}
+
 .card-moderna {
   border-top-color: #dc2626;
 }
