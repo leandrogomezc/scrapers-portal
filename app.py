@@ -133,7 +133,15 @@ def _update_job(source: str, **kwargs) -> None:
 
 def _get_job(source: str) -> dict:
     with _job_lock:
-        return dict(_jobs[source])
+        job = dict(_jobs[source])
+
+    scraper = _get_scraper(source)
+    if scraper and job["status"] != "running" and not job.get("output_path"):
+        output_path: Path = scraper["output_path"]
+        if output_path.exists():
+            job["output_path"] = str(output_path)
+
+    return job
 
 
 def _is_authorized() -> bool:
