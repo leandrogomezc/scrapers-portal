@@ -1,13 +1,17 @@
 """Unified Flask portal for Beauty Depot, Molvu, Biotech and Solís Comercial scrapers."""
 
+import logging
 import os
+import secrets
 import tempfile
 import threading
+import time
 from collections.abc import Callable
 from datetime import datetime, timezone
 from pathlib import Path
 
 from flask import Flask, jsonify, make_response, request, send_file, send_from_directory
+from werkzeug.exceptions import RequestEntityTooLarge
 
 from beautydepot_update import (
     find_master_path as find_beauty_master_path,
@@ -51,8 +55,22 @@ from scrape_tecnobodega import OUTPUT_PATH as TECNOBODEGA_OUTPUT
 from scrape_tecnobodega import run_scrape as tecnobodega_run_scrape
 
 app = Flask(__name__, static_folder="static", static_url_path="/static")
+app.config["MAX_CONTENT_LENGTH"] = 15 * 1024 * 1024
 
 SCRAPE_SECRET = os.environ.get("SCRAPE_SECRET", "")
+IS_PRODUCTION = bool(os.environ.get("RENDER"))
+AUTH_REQUIRED = bool(SCRAPE_SECRET) or IS_PRODUCTION
+
+RATE_LIMIT_MAX = 3
+RATE_LIMIT_WINDOW_SECONDS = 300
+_rate_limit: dict[str, list[float]] = {}
+_rate_limit_lock = threading.Lock()
+
+if IS_PRODUCTION and not SCRAPE_SECRET:
+    logging.warning(
+        "SCRAPE_SECRET no está configurado en producción. "
+        "Todas las rutas protegidas rechazarán solicitudes hasta configurarlo."
+    )
 
 _job_lock = threading.Lock()
 _idle_job = {
@@ -144,15 +162,60 @@ def _get_job(source: str) -> dict:
     return job
 
 
+def _extract_token() -> str:
+    return (request.headers.get("X-Scrape-Token") or "").strip()
+
+
 def _is_authorized() -> bool:
     if not SCRAPE_SECRET:
-        return True
-    token = request.headers.get("X-Scrape-Token")
-    if not token and request.is_json and request.json:
-        token = request.json.get("token")
-    if not token:
-        token = request.form.get("token")
-    return token == SCRAPE_SECRET
+        return not IS_PRODUCTION
+    return secrets.compare_digest(_extract_token(), SCRAPE_SECRET)
+
+
+def _auth_error_response():
+    return jsonify({"error": "Token inválido o faltante"}), 401
+
+
+def _require_auth():
+    if not _is_authorized():
+        return _auth_error_response()
+    return None
+
+
+def _check_rate_limit() -> bool:
+    ip = request.remote_addr or "unknown"
+    now = time.time()
+    with _rate_limit_lock:
+        timestamps = [t for t in _rate_limit.get(ip, []) if now - t < RATE_LIMIT_WINDOW_SECONDS]
+        if len(timestamps) >= RATE_LIMIT_MAX:
+            return False
+        timestamps.append(now)
+        _rate_limit[ip] = timestamps
+    return True
+
+
+@app.after_request
+def _set_security_headers(response):
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "script-src 'self'; "
+        "style-src 'self'; "
+        "img-src 'self' data:; "
+        "connect-src 'self'; "
+        "frame-ancestors 'none'; "
+        "base-uri 'self'"
+    )
+    if request.is_secure:
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    return response
+
+
+@app.errorhandler(RequestEntityTooLarge)
+def _handle_file_too_large(_exc):
+    return jsonify({"error": "El archivo supera el límite de 15 MB."}), 413
 
 
 def _run_job(source: str) -> None:
@@ -174,11 +237,12 @@ def _run_job(source: str) -> None:
             finished_at=_utc_now(),
             output_path=result["output_path"],
         )
-    except Exception as exc:
+    except Exception:
+        app.logger.exception("Scrape job failed for source=%s", source)
         _update_job(
             source,
             status="error",
-            message=str(exc),
+            message="Error interno al ejecutar el scrape.",
             finished_at=_utc_now(),
         )
 
@@ -190,14 +254,33 @@ def index():
     return response
 
 
+@app.get("/robots.txt")
+def robots_txt():
+    return make_response("User-agent: *\nDisallow: /\n", 200, {"Content-Type": "text/plain"})
+
+
+@app.get("/api/auth/required")
+def auth_required():
+    return jsonify(
+        {
+            "required": AUTH_REQUIRED,
+            "misconfigured": IS_PRODUCTION and not SCRAPE_SECRET,
+        }
+    )
+
+
 @app.post("/api/<source>/run")
 def api_run(source: str):
     scraper = _get_scraper(source)
     if not scraper:
         return jsonify({"error": "Fuente desconocida"}), 404
 
-    if not _is_authorized():
-        return jsonify({"error": "Token inválido o faltante"}), 401
+    auth_error = _require_auth()
+    if auth_error:
+        return auth_error
+
+    if not _check_rate_limit():
+        return jsonify({"error": "Demasiadas solicitudes. Espera unos minutos e intenta de nuevo."}), 429
 
     with _job_lock:
         if _jobs[source]["status"] == "running":
@@ -223,6 +306,9 @@ def api_run(source: str):
 def api_status(source: str):
     if not _get_scraper(source):
         return jsonify({"error": "Fuente desconocida"}), 404
+    auth_error = _require_auth()
+    if auth_error:
+        return auth_error
     return jsonify(_get_job(source))
 
 
@@ -280,13 +366,17 @@ def _send_update_file(update_path: Path | None, download_basename: str):
 
 @app.get("/api/beautydepot/update-status")
 def beautydepot_update_status():
+    auth_error = _require_auth()
+    if auth_error:
+        return auth_error
     return jsonify(get_beauty_update_status())
 
 
 @app.post("/api/beautydepot/upload-master")
 def beautydepot_upload_master():
-    if not _is_authorized():
-        return jsonify({"error": "Token inválido o faltante"}), 401
+    auth_error = _require_auth()
+    if auth_error:
+        return auth_error
 
     payload, error = _upload_master_file(
         request.files.get("file"),
@@ -300,8 +390,9 @@ def beautydepot_upload_master():
 
 @app.post("/api/beautydepot/generate-update")
 def beautydepot_generate_update():
-    if not _is_authorized():
-        return jsonify({"error": "Token inválido o faltante"}), 401
+    auth_error = _require_auth()
+    if auth_error:
+        return auth_error
 
     if not find_beauty_master_path():
         return jsonify({"error": "Sube primero el archivo maestro."}), 400
@@ -323,18 +414,25 @@ def beautydepot_generate_update():
 
 @app.get("/download/beautydepot/update-csv")
 def download_beautydepot_update_csv():
+    auth_error = _require_auth()
+    if auth_error:
+        return auth_error
     return _send_update_file(find_beauty_update_path(), "beautydepot_actualizacion")
 
 
 @app.get("/api/solcom/update-status")
 def solcom_update_status():
+    auth_error = _require_auth()
+    if auth_error:
+        return auth_error
     return jsonify(get_solcom_update_status())
 
 
 @app.post("/api/solcom/upload-master")
 def solcom_upload_master():
-    if not _is_authorized():
-        return jsonify({"error": "Token inválido o faltante"}), 401
+    auth_error = _require_auth()
+    if auth_error:
+        return auth_error
 
     payload, error = _upload_master_file(
         request.files.get("file"),
@@ -348,8 +446,9 @@ def solcom_upload_master():
 
 @app.post("/api/solcom/generate-update")
 def solcom_generate_update():
-    if not _is_authorized():
-        return jsonify({"error": "Token inválido o faltante"}), 401
+    auth_error = _require_auth()
+    if auth_error:
+        return auth_error
 
     if not find_solcom_master_path():
         return jsonify({"error": "Sube primero el archivo maestro."}), 400
@@ -375,18 +474,25 @@ def solcom_generate_update():
 
 @app.get("/download/solcom/update-csv")
 def download_solcom_update_csv():
+    auth_error = _require_auth()
+    if auth_error:
+        return auth_error
     return _send_update_file(find_solcom_update_path(), "solcom_actualizacion")
 
 
 @app.get("/api/moderna/update-status")
 def moderna_update_status():
+    auth_error = _require_auth()
+    if auth_error:
+        return auth_error
     return jsonify(get_moderna_update_status())
 
 
 @app.post("/api/moderna/upload-base")
 def moderna_upload_base():
-    if not _is_authorized():
-        return jsonify({"error": "Token inválido o faltante"}), 401
+    auth_error = _require_auth()
+    if auth_error:
+        return auth_error
 
     upload = request.files.get("file")
     if not upload or not upload.filename:
@@ -406,8 +512,9 @@ def moderna_upload_base():
 
 @app.post("/api/moderna/upload-master")
 def moderna_upload_master():
-    if not _is_authorized():
-        return jsonify({"error": "Token inválido o faltante"}), 401
+    auth_error = _require_auth()
+    if auth_error:
+        return auth_error
 
     payload, error = _upload_master_file(
         request.files.get("file"),
@@ -421,8 +528,9 @@ def moderna_upload_master():
 
 @app.post("/api/moderna/generate-update")
 def moderna_generate_update():
-    if not _is_authorized():
-        return jsonify({"error": "Token inválido o faltante"}), 401
+    auth_error = _require_auth()
+    if auth_error:
+        return auth_error
 
     if not find_moderna_base_path():
         return jsonify({"error": "Sube primero la Base de Datos."}), 400
@@ -444,11 +552,18 @@ def moderna_generate_update():
 
 @app.get("/download/moderna/update-csv")
 def download_moderna_update_csv():
+    auth_error = _require_auth()
+    if auth_error:
+        return auth_error
     return _send_update_file(find_moderna_update_path(), "moderna_actualizacion")
 
 
 @app.get("/download/<source>/csv")
 def download_csv(source: str):
+    auth_error = _require_auth()
+    if auth_error:
+        return auth_error
+
     scraper = _get_scraper(source)
     if not scraper:
         return jsonify({"error": "Fuente desconocida"}), 404
