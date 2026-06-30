@@ -39,13 +39,34 @@ Abre http://127.0.0.1:5050
 
 | Variable | Descripción |
 |---|---|
-| `SCRAPE_SECRET` | Token para proteger `POST /api/*/run` |
+| `SCRAPE_SECRET` | Token obligatorio en producción. Protege scrapes, subidas, descargas y consultas de estado vía header `X-Scrape-Token` |
 | `SOLCOM_EMAIL` | Usuario ERP Solís Comercial |
 | `SOLCOM_PASSWORD` | Contraseña ERP |
 | `SOLCOM_BASE_URL` | Default `https://solcom-erp.vercel.app` |
 | `SUPABASE_URL` | URL Supabase del ERP |
 | `SUPABASE_ANON_KEY` | Clave pública publishable |
 | `USE_PLAYWRIGHT` | `false` en Render; `true` solo si quieres modo navegador local |
+
+## Seguridad
+
+En **producción (Render)** debes configurar `SCRAPE_SECRET` con un valor largo y aleatorio. Sin él, el portal rechaza todas las operaciones sensibles.
+
+Checklist:
+
+- [ ] `SCRAPE_SECRET` configurado en el dashboard de Render (no en el repo)
+- [ ] `.env` en `.gitignore` y nunca commitear credenciales
+- [ ] Rotar `SCRAPE_SECRET` si sospechas filtración del token
+- [ ] Acceder solo por HTTPS (Render lo provee automáticamente)
+- [ ] No compartir el token; cada usuario autorizado lo ingresa en la landing
+
+La landing envía el token únicamente en el header `X-Scrape-Token`. Las descargas, estados y scrapes requieren autenticación cuando el secret está activo.
+
+Límites activos:
+
+- Subida de archivos: máximo **15 MB**
+- Scrapes: máximo **3 solicitudes por IP cada 5 minutos**
+- Headers HTTP: CSP, `X-Frame-Options`, `X-Content-Type-Options`, HSTS (HTTPS)
+- `robots.txt` bloquea indexación del portal
 
 ## Salida CSV
 

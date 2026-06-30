@@ -14,692 +14,247 @@
           Descarga catálogos e inventarios, o genera archivos de actualización parcial
           para Beauty Depot y Solís Comercial.
         </p>
-        <label for="token">Token de acceso (opcional)</label>
-        <input
-          type="password"
-          id="token"
-          placeholder="Solo si SCRAPE_SECRET está configurado"
-          autocomplete="off"
-        />
+        <div id="security-banner" class="security-banner hidden" role="status"></div>
+        <div class="token-row">
+          <div class="token-field">
+            <label for="token" id="token-label">Token de acceso (opcional)</label>
+            <input
+              type="password"
+              id="token"
+              placeholder="Solo si SCRAPE_SECRET está configurado"
+              autocomplete="off"
+            />
+          </div>
+          <button type="button" id="clear-token-btn" class="btn-clear-session">Limpiar sesión</button>
+        </div>
       </header>
 
-      <nav class="tab-bar" role="tablist">
-        <button type="button" class="tab-btn active" data-tab="scrape" role="tab" aria-selected="true">
-          Scrape
-        </button>
-        <button type="button" class="tab-btn" data-tab="actualizacion" role="tab" aria-selected="false">
-          Actualización
-        </button>
-      </nav>
+      <div id="portal-root">
+        <nav class="tab-bar" role="tablist">
+          <button type="button" class="tab-btn active" data-tab="scrape" role="tab" aria-selected="true">
+            Scrape
+          </button>
+          <button type="button" class="tab-btn" data-tab="actualizacion" role="tab" aria-selected="false">
+            Actualización
+          </button>
+        </nav>
 
-      <div id="tab-scrape" class="tab-panel active" role="tabpanel">
-        <div class="portal-grid">
-          <section class="card card-beautydepot" data-source="beautydepot">
-            <h2>Beauty Depot</h2>
-            <p class="card-desc">
-              Catálogo completo de beautydepot.com.gt (~2045 productos). SKU, nombre,
-              precio e inventario.
-            </p>
-            <div class="actions">
-              <button type="button" class="btn-primary run-btn">Ejecutar scrape</button>
-              <a class="download-link hidden" href="/download/beautydepot/csv">
-                <button type="button" class="btn-secondary">Descargar CSV catálogo</button>
-              </a>
-            </div>
-            <div class="status">
-              <div class="status-label">Estado</div>
-              <div class="status-message">Listo para ejecutar.</div>
-            </div>
-          </section>
-
-          <section class="card card-biotech" data-source="biotech">
-            <h2>Pinturas Biotech</h2>
-            <p class="card-desc">
-              Catálogo completo de pinturasbiotech.com (Odoo). SKU, nombre, descripción,
-              imagen y precio de venta.
-            </p>
-            <div class="actions">
-              <button type="button" class="btn-primary run-btn">Ejecutar scrape</button>
-              <a class="download-link hidden" href="/download/biotech/csv">
-                <button type="button" class="btn-secondary">Descargar CSV catálogo</button>
-              </a>
-            </div>
-            <div class="status">
-              <div class="status-label">Estado</div>
-              <div class="status-message">Listo para ejecutar.</div>
-            </div>
-          </section>
-
-          <section class="card card-molvu" data-source="molvu">
-            <h2>Molvu</h2>
-            <p class="card-desc">
-              Catálogo completo de molvu.com.gt (Shopify). SKU, nombre, descripción,
-              imagen y precio de venta.
-            </p>
-            <div class="actions">
-              <button type="button" class="btn-primary run-btn">Ejecutar scrape</button>
-              <a class="download-link hidden" href="/download/molvu/csv">
-                <button type="button" class="btn-secondary">Descargar CSV catálogo</button>
-              </a>
-            </div>
-            <div class="status">
-              <div class="status-label">Estado</div>
-              <div class="status-message">Listo para ejecutar.</div>
-            </div>
-          </section>
-
-          <section class="card card-solcom" data-source="solcom">
-            <h2>Solís Comercial</h2>
-            <p class="card-desc">
-              Inventario de solcom-erp.vercel.app. SKU, nombre y cantidad disponible
-              en bodega.
-            </p>
-            <div class="actions">
-              <button type="button" class="btn-primary run-btn">Descargar inventario</button>
-              <a class="download-link hidden" href="/download/solcom/csv">
-                <button type="button" class="btn-secondary">Descargar CSV inventario</button>
-              </a>
-            </div>
-            <div class="status">
-              <div class="status-label">Estado</div>
-              <div class="status-message">Listo para ejecutar.</div>
-            </div>
-          </section>
-
-          <section class="card card-tecnobodega" data-source="tecnobodega">
-            <h2>TecnoBodega</h2>
-            <p class="card-desc">
-              Catálogo completo de tecnobodega.com.gt (WooCommerce). SKU, nombre,
-              descripción, imagen y precio de venta.
-            </p>
-            <div class="actions">
-              <button type="button" class="btn-primary run-btn">Ejecutar scrape</button>
-              <a class="download-link hidden" href="/download/tecnobodega/csv">
-                <button type="button" class="btn-secondary">Descargar CSV catálogo</button>
-              </a>
-            </div>
-            <div class="status">
-              <div class="status-label">Estado</div>
-              <div class="status-message">Listo para ejecutar.</div>
-            </div>
-          </section>
-
-          <section class="card card-laincreible" data-source="laincreible">
-            <h2>La Increíble ABM</h2>
-            <p class="card-desc">
-              Catálogo completo de old.laincreibleabm.com.gt (PrestaShop). SKU,
-              nombre, descripción, precio, stock, categoría, fabricante, estado,
-              ficha técnica e imagen.
-            </p>
-            <div class="actions">
-              <button type="button" class="btn-primary run-btn">Ejecutar scrape</button>
-              <a class="download-link hidden" href="/download/laincreible/csv">
-                <button type="button" class="btn-secondary">Descargar CSV catálogo</button>
-              </a>
-            </div>
-            <div class="status">
-              <div class="status-label">Estado</div>
-              <div class="status-message">Listo para ejecutar.</div>
-            </div>
-          </section>
-        </div>
-      </div>
-
-      <div id="tab-actualizacion" class="tab-panel" role="tabpanel">
-        <div class="portal-grid">
-          <section class="card card-beautydepot" data-update-source="beautydepot">
-            <h2>Beauty Depot</h2>
-            <p class="card-desc">
-              Compara tu Excel maestro con el catálogo scrapeado y genera un archivo
-              de actualización de Precio e inventario Beauty Depot.
-            </p>
-            <div class="scrape-badge missing" id="scrape-badge-beautydepot">
-              Falta ejecutar scrape.
-              <button type="button" class="tab-link">Ir a Scrape</button>
-            </div>
-            <div class="update-section">
-              <label class="file-label" for="master-file">Archivo maestro (.xlsx) — SKU, Precio, Beauty Depot</label>
-              <input type="file" id="master-file" accept=".xlsx,.csv" class="file-input" />
-              <div class="master-status" id="master-status">Sin archivo maestro subido.</div>
-            </div>
-            <div class="actions">
-              <button type="button" class="btn-secondary generate-update-btn" disabled>
-                Generar actualización
-              </button>
-              <a class="update-download-link hidden" href="/download/beautydepot/update-csv">
-                <button type="button" class="btn-secondary">Descargar actualización</button>
-              </a>
-            </div>
-            <div class="status">
-              <div class="status-label">Estado</div>
-              <div class="status-message">Listo para generar actualización.</div>
-            </div>
-          </section>
-
-          <section class="card card-solcom" data-update-source="solcom">
-            <h2>Solís Comercial</h2>
-            <p class="card-desc">
-              Compara tu Excel maestro con el inventario scrapeado y actualiza la
-              columna Punto Digital con la cantidad real.
-            </p>
-            <div class="scrape-badge missing" id="scrape-badge-solcom">
-              Falta ejecutar scrape.
-              <button type="button" class="tab-link">Ir a Scrape</button>
-            </div>
-            <div class="update-section">
-              <label class="file-label" for="solcom-master-file">Archivo maestro (.xlsx) — SKU, Punto Digital</label>
-              <input type="file" id="solcom-master-file" accept=".xlsx,.csv" class="file-input" />
-              <div class="master-status" id="solcom-master-status">Sin archivo maestro subido.</div>
-            </div>
-            <div class="update-section">
-              <label class="file-label" for="solcom-prices-text">Lista de precios (opcional) — actualiza «Costo» (USD x 37.1)</label>
-              <textarea
-                id="solcom-prices-text"
-                class="prices-textarea"
-                rows="6"
-                placeholder="Pega aquí la lista, ej:&#10;SAMSUNG&#10;$ 130…..A16 (128_4) DS&#10;$ 94…..A07 (64_4) DS"
-              ></textarea>
-              <div class="master-status">
-                Se calcula Costo desde USD x 37.1 y se ajusta Precio si el margen queda menor al 12%.
-                Los productos que no existan en el maestro se ignoran.
+        <div id="tab-scrape" class="tab-panel active" role="tabpanel">
+          <div class="portal-grid">
+            <section class="card card-beautydepot" data-source="beautydepot" data-download-name="beautydepot_productos.csv">
+              <h2>Beauty Depot</h2>
+              <p class="card-desc">
+                Catálogo completo de beautydepot.com.gt (~2045 productos). SKU, nombre,
+                precio e inventario.
+              </p>
+              <div class="actions">
+                <button type="button" class="btn-primary run-btn">Ejecutar scrape</button>
+                <button type="button" class="btn-secondary download-btn hidden">Descargar CSV catálogo</button>
               </div>
-            </div>
-            <div class="actions">
-              <button type="button" class="btn-secondary generate-update-btn" disabled>
-                Generar actualización
-              </button>
-              <a class="update-download-link hidden" href="/download/solcom/update-csv">
-                <button type="button" class="btn-secondary">Descargar actualización</button>
-              </a>
-            </div>
-            <div class="status">
-              <div class="status-label">Estado</div>
-              <div class="status-message">Listo para generar actualización.</div>
-            </div>
-          </section>
+              <div class="status">
+                <div class="status-label">Estado</div>
+                <div class="status-message">Listo para ejecutar.</div>
+              </div>
+            </section>
 
-          <section class="card card-moderna" data-update-source="moderna">
-            <h2>Moderna</h2>
-            <p class="card-desc">
-              Sube la Base de Datos de Moderna y tu Archivo de Actualización. El sistema
-              llenará Costo, Precio y MODERNA según el match SKU = Código. Si un SKU no
-              aparece en la Base de Datos, se considera sin inventario y MODERNA queda en 0.
-            </p>
-            <div class="scrape-badge missing" id="moderna-base-badge">
-              Falta subir base de datos.
-            </div>
-            <div class="update-section">
-              <label class="file-label" for="moderna-base-file">Base de Datos (.csv) — Código, Precio, Precio MAP, Stock</label>
-              <input type="file" id="moderna-base-file" accept=".csv" class="file-input" />
-              <div class="master-status" id="moderna-base-status">Sin base de datos subida.</div>
-            </div>
-            <div class="update-section">
-              <label class="file-label" for="moderna-master-file">Archivo de Actualización (.xlsx) — SKU, Costo, Precio, MODERNA</label>
-              <input type="file" id="moderna-master-file" accept=".xlsx,.csv" class="file-input" />
-              <div class="master-status" id="moderna-master-status">Sin archivo de actualización subido.</div>
-            </div>
-            <div class="actions">
-              <button type="button" class="btn-secondary generate-update-btn" disabled>
-                Generar actualización
-              </button>
-              <a class="update-download-link hidden" href="/download/moderna/update-csv">
-                <button type="button" class="btn-secondary">Descargar actualización</button>
-              </a>
-            </div>
-            <div class="status">
-              <div class="status-label">Estado</div>
-              <div class="status-message">Listo para generar actualización.</div>
-            </div>
-          </section>
+            <section class="card card-biotech" data-source="biotech" data-download-name="biotech_productos.csv">
+              <h2>Pinturas Biotech</h2>
+              <p class="card-desc">
+                Catálogo completo de pinturasbiotech.com (Odoo). SKU, nombre, descripción,
+                imagen y precio de venta.
+              </p>
+              <div class="actions">
+                <button type="button" class="btn-primary run-btn">Ejecutar scrape</button>
+                <button type="button" class="btn-secondary download-btn hidden">Descargar CSV catálogo</button>
+              </div>
+              <div class="status">
+                <div class="status-label">Estado</div>
+                <div class="status-message">Listo para ejecutar.</div>
+              </div>
+            </section>
+
+            <section class="card card-molvu" data-source="molvu" data-download-name="molvu_productos.csv">
+              <h2>Molvu</h2>
+              <p class="card-desc">
+                Catálogo completo de molvu.com.gt (Shopify). SKU, nombre, descripción,
+                imagen y precio de venta.
+              </p>
+              <div class="actions">
+                <button type="button" class="btn-primary run-btn">Ejecutar scrape</button>
+                <button type="button" class="btn-secondary download-btn hidden">Descargar CSV catálogo</button>
+              </div>
+              <div class="status">
+                <div class="status-label">Estado</div>
+                <div class="status-message">Listo para ejecutar.</div>
+              </div>
+            </section>
+
+            <section class="card card-solcom" data-source="solcom" data-download-name="inventario.csv">
+              <h2>Solís Comercial</h2>
+              <p class="card-desc">
+                Inventario de solcom-erp.vercel.app. SKU, nombre y cantidad disponible
+                en bodega.
+              </p>
+              <div class="actions">
+                <button type="button" class="btn-primary run-btn">Descargar inventario</button>
+                <button type="button" class="btn-secondary download-btn hidden">Descargar CSV inventario</button>
+              </div>
+              <div class="status">
+                <div class="status-label">Estado</div>
+                <div class="status-message">Listo para ejecutar.</div>
+              </div>
+            </section>
+
+            <section class="card card-tecnobodega" data-source="tecnobodega" data-download-name="tecnobodega_productos.csv">
+              <h2>TecnoBodega</h2>
+              <p class="card-desc">
+                Catálogo completo de tecnobodega.com.gt (WooCommerce). SKU, nombre,
+                descripción, imagen y precio de venta.
+              </p>
+              <div class="actions">
+                <button type="button" class="btn-primary run-btn">Ejecutar scrape</button>
+                <button type="button" class="btn-secondary download-btn hidden">Descargar CSV catálogo</button>
+              </div>
+              <div class="status">
+                <div class="status-label">Estado</div>
+                <div class="status-message">Listo para ejecutar.</div>
+              </div>
+            </section>
+
+            <section class="card card-laincreible" data-source="laincreible" data-download-name="laincreibleabm_productos.csv">
+              <h2>La Increíble ABM</h2>
+              <p class="card-desc">
+                Catálogo completo de old.laincreibleabm.com.gt (PrestaShop). SKU,
+                nombre, descripción, precio, stock, categoría, fabricante, estado,
+                ficha técnica e imagen.
+              </p>
+              <div class="actions">
+                <button type="button" class="btn-primary run-btn">Ejecutar scrape</button>
+                <button type="button" class="btn-secondary download-btn hidden">Descargar CSV catálogo</button>
+              </div>
+              <div class="status">
+                <div class="status-label">Estado</div>
+                <div class="status-message">Listo para ejecutar.</div>
+              </div>
+            </section>
+          </div>
+        </div>
+
+        <div id="tab-actualizacion" class="tab-panel" role="tabpanel">
+          <div class="portal-grid">
+            <section class="card card-beautydepot" data-update-source="beautydepot">
+              <h2>Beauty Depot</h2>
+              <p class="card-desc">
+                Compara tu Excel maestro con el catálogo scrapeado y genera un archivo
+                de actualización de Precio e inventario Beauty Depot.
+              </p>
+              <div class="scrape-badge missing" id="scrape-badge-beautydepot">
+                Falta ejecutar scrape.
+                <button type="button" class="tab-link">Ir a Scrape</button>
+              </div>
+              <div class="update-section">
+                <label class="file-label" for="master-file">Archivo maestro (.xlsx) — SKU, Precio, Beauty Depot</label>
+                <input type="file" id="master-file" accept=".xlsx,.csv" class="file-input" />
+                <div class="master-status" id="master-status">Sin archivo maestro subido.</div>
+              </div>
+              <div class="actions">
+                <button type="button" class="btn-secondary generate-update-btn" disabled>
+                  Generar actualización
+                </button>
+                <button type="button" class="btn-secondary update-download-btn hidden">
+                  Descargar actualización
+                </button>
+              </div>
+              <div class="status">
+                <div class="status-label">Estado</div>
+                <div class="status-message">Listo para generar actualización.</div>
+              </div>
+            </section>
+
+            <section class="card card-solcom" data-update-source="solcom">
+              <h2>Solís Comercial</h2>
+              <p class="card-desc">
+                Compara tu Excel maestro con el inventario scrapeado y actualiza la
+                columna Punto Digital con la cantidad real.
+              </p>
+              <div class="scrape-badge missing" id="scrape-badge-solcom">
+                Falta ejecutar scrape.
+                <button type="button" class="tab-link">Ir a Scrape</button>
+              </div>
+              <div class="update-section">
+                <label class="file-label" for="solcom-master-file">Archivo maestro (.xlsx) — SKU, Punto Digital</label>
+                <input type="file" id="solcom-master-file" accept=".xlsx,.csv" class="file-input" />
+                <div class="master-status" id="solcom-master-status">Sin archivo maestro subido.</div>
+              </div>
+              <div class="update-section">
+                <label class="file-label" for="solcom-prices-text">Lista de precios (opcional) — actualiza «Costo» (USD x 37.1)</label>
+                <textarea
+                  id="solcom-prices-text"
+                  class="prices-textarea"
+                  rows="6"
+                  placeholder="Pega aquí la lista, ej:&#10;SAMSUNG&#10;$ 130…..A16 (128_4) DS&#10;$ 94…..A07 (64_4) DS"
+                ></textarea>
+                <div class="master-status">
+                  Se calcula Costo desde USD x 37.1 y se ajusta Precio si el margen queda menor al 12%.
+                  Los productos que no existan en el maestro se ignoran.
+                </div>
+              </div>
+              <div class="actions">
+                <button type="button" class="btn-secondary generate-update-btn" disabled>
+                  Generar actualización
+                </button>
+                <button type="button" class="btn-secondary update-download-btn hidden">
+                  Descargar actualización
+                </button>
+              </div>
+              <div class="status">
+                <div class="status-label">Estado</div>
+                <div class="status-message">Listo para generar actualización.</div>
+              </div>
+            </section>
+
+            <section class="card card-moderna" data-update-source="moderna">
+              <h2>Moderna</h2>
+              <p class="card-desc">
+                Sube la Base de Datos de Moderna y tu Archivo de Actualización. El sistema
+                llenará Costo, Precio y MODERNA según el match SKU = Código. Si un SKU no
+                aparece en la Base de Datos, se considera sin inventario y MODERNA queda en 0.
+              </p>
+              <div class="scrape-badge missing" id="moderna-base-badge">
+                Falta subir base de datos.
+              </div>
+              <div class="update-section">
+                <label class="file-label" for="moderna-base-file">Base de Datos (.csv) — Código, Precio, Precio MAP, Stock</label>
+                <input type="file" id="moderna-base-file" accept=".csv" class="file-input" />
+                <div class="master-status" id="moderna-base-status">Sin base de datos subida.</div>
+              </div>
+              <div class="update-section">
+                <label class="file-label" for="moderna-master-file">Archivo de Actualización (.xlsx) — SKU, Costo, Precio, MODERNA</label>
+                <input type="file" id="moderna-master-file" accept=".xlsx,.csv" class="file-input" />
+                <div class="master-status" id="moderna-master-status">Sin archivo de actualización subido.</div>
+              </div>
+              <div class="actions">
+                <button type="button" class="btn-secondary generate-update-btn" disabled>
+                  Generar actualización
+                </button>
+                <button type="button" class="btn-secondary update-download-btn hidden">
+                  Descargar actualización
+                </button>
+              </div>
+              <div class="status">
+                <div class="status-label">Estado</div>
+                <div class="status-message">Listo para generar actualización.</div>
+              </div>
+            </section>
+          </div>
         </div>
       </div>
+
+      <footer class="portal-footer">
+        Usa HTTPS en producción. No compartas el token de acceso.
+      </footer>
     </div>
 
-    <script>
-      const TOKEN_KEY = "portal_scrape_token";
-      const tokenInput = document.getElementById("token");
-      const pollTimers = {};
-      const scrapePanel = document.getElementById("tab-scrape");
-
-      const UPDATE_SOURCES = {
-        beautydepot: {
-          statusUrl: "/api/beautydepot/update-status",
-          uploadUrl: "/api/beautydepot/upload-master",
-          generateUrl: "/api/beautydepot/generate-update",
-          masterFileInput: document.getElementById("master-file"),
-          masterStatusEl: document.getElementById("master-status"),
-          scrapeBadgeEl: document.getElementById("scrape-badge-beautydepot"),
-          card: document.querySelector('[data-update-source="beautydepot"]'),
-          requiresScrape: true,
-          formatDoneMessage: (data) =>
-            `${data.total} SKUs en maestro · ${data.stock_10} con stock 10 · ${data.stock_0} con stock 0`,
-        },
-        solcom: {
-          statusUrl: "/api/solcom/update-status",
-          uploadUrl: "/api/solcom/upload-master",
-          generateUrl: "/api/solcom/generate-update",
-          masterFileInput: document.getElementById("solcom-master-file"),
-          masterStatusEl: document.getElementById("solcom-master-status"),
-          pricesTextInput: document.getElementById("solcom-prices-text"),
-          scrapeBadgeEl: document.getElementById("scrape-badge-solcom"),
-          card: document.querySelector('[data-update-source="solcom"]'),
-          requiresScrape: true,
-          formatDoneMessage: (data) => {
-            let msg = `${data.total} SKUs · ${data.with_stock} con stock · ${data.zero_stock} en 0`;
-            if (data.name_matched) {
-              msg += ` · ${data.name_matched} por nombre`;
-            }
-            if (data.skus_written) {
-              msg += ` · ${data.skus_written} SKU escritos`;
-            }
-            if ((data.prices_matched || 0) + (data.prices_unmatched || 0) > 0) {
-              msg += ` · ${data.prices_matched} costos aplicados · ${data.prices_unmatched} ignorados`;
-              if (data.sale_prices_adjusted) {
-                msg += ` · ${data.sale_prices_adjusted} precios ajustados al margen mínimo`;
-              }
-            }
-            return msg;
-          },
-        },
-        moderna: {
-          statusUrl: "/api/moderna/update-status",
-          baseUploadUrl: "/api/moderna/upload-base",
-          uploadUrl: "/api/moderna/upload-master",
-          generateUrl: "/api/moderna/generate-update",
-          baseFileInput: document.getElementById("moderna-base-file"),
-          baseStatusEl: document.getElementById("moderna-base-status"),
-          masterFileInput: document.getElementById("moderna-master-file"),
-          masterStatusEl: document.getElementById("moderna-master-status"),
-          scrapeBadgeEl: document.getElementById("moderna-base-badge"),
-          card: document.querySelector('[data-update-source="moderna"]'),
-          requiresScrape: false,
-          formatDoneMessage: (data) =>
-            `${data.total} SKUs · ${data.matched} en base · ${data.unmatched} sin existir (MODERNA=0) · ${data.with_stock} con stock`,
-        },
-      };
-
-      const updateStates = {
-        beautydepot: { masterUploaded: false, scrapeAvailable: false, updateAvailable: false },
-        solcom: { masterUploaded: false, scrapeAvailable: false, updateAvailable: false },
-        moderna: { baseUploaded: false, masterUploaded: false, scrapeAvailable: false, updateAvailable: false },
-      };
-
-      const savedToken = sessionStorage.getItem(TOKEN_KEY);
-      if (savedToken) tokenInput.value = savedToken;
-
-      function getToken() {
-        const token = tokenInput.value.trim();
-        if (token) sessionStorage.setItem(TOKEN_KEY, token);
-        return token;
-      }
-
-      function switchTab(tabId) {
-        document.querySelectorAll(".tab-btn").forEach((btn) => {
-          const isActive = btn.dataset.tab === tabId;
-          btn.classList.toggle("active", isActive);
-          btn.setAttribute("aria-selected", isActive ? "true" : "false");
-        });
-        document.querySelectorAll(".tab-panel").forEach((panel) => {
-          panel.classList.toggle("active", panel.id === `tab-${tabId}`);
-        });
-        if (tabId === "actualizacion") {
-          refreshAllUpdateStatus();
-        }
-      }
-
-      document.querySelectorAll(".tab-btn").forEach((btn) => {
-        btn.addEventListener("click", () => switchTab(btn.dataset.tab));
-      });
-
-      document.querySelectorAll(".scrape-badge .tab-link").forEach((link) => {
-        link.addEventListener("click", () => switchTab("scrape"));
-      });
-
-      function updateScrapeBadge(sourceKey, available) {
-        const badge = UPDATE_SOURCES[sourceKey].scrapeBadgeEl;
-        badge.classList.toggle("available", available);
-        badge.classList.toggle("missing", !available);
-        if (available) {
-          badge.innerHTML = "Catálogo disponible";
-        } else {
-          badge.innerHTML =
-            'Falta ejecutar scrape. <button type="button" class="tab-link">Ir a Scrape</button>';
-          badge.querySelector(".tab-link").addEventListener("click", () => switchTab("scrape"));
-        }
-      }
-
-      function updateBaseBadge(sourceKey, available) {
-        const badge = UPDATE_SOURCES[sourceKey].scrapeBadgeEl;
-        badge.classList.toggle("available", available);
-        badge.classList.toggle("missing", !available);
-        badge.textContent = available ? "Base de datos cargada" : "Falta subir base de datos.";
-      }
-
-      function refreshGenerateButton(sourceKey) {
-        const config = UPDATE_SOURCES[sourceKey];
-        const state = updateStates[sourceKey];
-        const generateBtn = config.card.querySelector(".generate-update-btn");
-
-        if (config.requiresScrape === false) {
-          generateBtn.disabled = !(state.baseUploaded && state.masterUploaded);
-        } else {
-          generateBtn.disabled = !(state.masterUploaded && state.scrapeAvailable);
-        }
-      }
-
-      function showUpdateDownload(sourceKey, show) {
-        UPDATE_SOURCES[sourceKey].card
-          .querySelector(".update-download-link")
-          .classList.toggle("hidden", !show);
-      }
-
-      async function refreshUpdateStatus(sourceKey) {
-        const config = UPDATE_SOURCES[sourceKey];
-        const state = updateStates[sourceKey];
-
-        try {
-          const res = await fetch(config.statusUrl);
-          const data = await res.json();
-          state.masterUploaded = Boolean(data.master_uploaded);
-          state.scrapeAvailable = Boolean(data.scrape_available);
-          state.updateAvailable = Boolean(data.update_available);
-
-          if (config.requiresScrape === false) {
-            state.baseUploaded = Boolean(data.base_uploaded);
-            if (data.base_uploaded && data.base_rows != null) {
-              config.baseStatusEl.textContent = `Base de datos (CSV) cargada: ${data.base_rows} filas.`;
-            } else {
-              config.baseStatusEl.textContent = "Sin base de datos subida.";
-            }
-            updateBaseBadge(sourceKey, state.baseUploaded);
-          } else {
-            updateScrapeBadge(sourceKey, state.scrapeAvailable);
-          }
-
-          if (data.master_uploaded && data.master_rows != null) {
-            const fmt = data.master_format ? data.master_format.toUpperCase() : "XLSX";
-            const label = config.requiresScrape === false ? "Archivo de actualización" : "Archivo maestro";
-            config.masterStatusEl.textContent = `${label} (${fmt}) cargado: ${data.master_rows} filas.`;
-          } else {
-            config.masterStatusEl.textContent =
-              config.requiresScrape === false
-                ? "Sin archivo de actualización subido."
-                : "Sin archivo maestro subido.";
-          }
-
-          showUpdateDownload(sourceKey, state.updateAvailable);
-          refreshGenerateButton(sourceKey);
-        } catch (err) {
-          if (config.baseStatusEl) {
-            config.baseStatusEl.textContent = "No se pudo consultar el estado.";
-          }
-          config.masterStatusEl.textContent = "No se pudo consultar el estado del maestro.";
-        }
-      }
-
-      function refreshAllUpdateStatus() {
-        Object.keys(UPDATE_SOURCES).forEach(refreshUpdateStatus);
-      }
-
-      async function uploadBaseFile(sourceKey, file) {
-        const config = UPDATE_SOURCES[sourceKey];
-        const state = updateStates[sourceKey];
-        const token = getToken();
-        const formData = new FormData();
-        formData.append("file", file);
-
-        config.baseStatusEl.textContent = "Subiendo base de datos...";
-
-        try {
-          const res = await fetch(config.baseUploadUrl, {
-            method: "POST",
-            headers: { "X-Scrape-Token": token },
-            body: formData,
-          });
-          const data = await res.json().catch(() => ({}));
-
-          if (res.status === 401) {
-            config.baseStatusEl.textContent = "Token inválido. Verifica tu clave de acceso.";
-            return;
-          }
-
-          if (!res.ok) {
-            config.baseStatusEl.textContent = data.error || "Error al subir la base de datos.";
-            return;
-          }
-
-          const fmt = data.format ? data.format.toUpperCase() : "CSV";
-          config.baseStatusEl.textContent = `Base de datos (${fmt}) cargada: ${data.master_rows} filas.`;
-          state.baseUploaded = true;
-          updateBaseBadge(sourceKey, true);
-          refreshGenerateButton(sourceKey);
-        } catch (err) {
-          config.baseStatusEl.textContent = "Error de conexión al subir: " + err.message;
-        }
-      }
-
-      async function uploadMasterFile(sourceKey, file) {
-        const config = UPDATE_SOURCES[sourceKey];
-        const state = updateStates[sourceKey];
-        const token = getToken();
-        const formData = new FormData();
-        formData.append("file", file);
-
-        config.masterStatusEl.textContent = "Subiendo archivo maestro...";
-
-        try {
-          const res = await fetch(config.uploadUrl, {
-            method: "POST",
-            headers: { "X-Scrape-Token": token },
-            body: formData,
-          });
-          const data = await res.json().catch(() => ({}));
-
-          if (res.status === 401) {
-            config.masterStatusEl.textContent = "Token inválido. Verifica tu clave de acceso.";
-            return;
-          }
-
-          if (!res.ok) {
-            config.masterStatusEl.textContent = data.error || "Error al subir el archivo maestro.";
-            return;
-          }
-
-          const fmt = data.format ? data.format.toUpperCase() : "XLSX";
-          const label = config.requiresScrape === false ? "Archivo de actualización" : "Archivo maestro";
-          config.masterStatusEl.textContent = `${label} (${fmt}) cargado: ${data.master_rows} filas.`;
-          state.masterUploaded = true;
-          refreshGenerateButton(sourceKey);
-        } catch (err) {
-          config.masterStatusEl.textContent = "Error de conexión al subir: " + err.message;
-        }
-      }
-
-      async function generateUpdate(sourceKey) {
-        const config = UPDATE_SOURCES[sourceKey];
-        const state = updateStates[sourceKey];
-        const token = getToken();
-        const generateBtn = config.card.querySelector(".generate-update-btn");
-
-        generateBtn.disabled = true;
-        setStatus(config.card, "running", "Generando archivo de actualización...", true);
-
-        const payload = { token };
-        if (config.pricesTextInput) {
-          payload.prices_text = config.pricesTextInput.value || "";
-        }
-
-        try {
-          const res = await fetch(config.generateUrl, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Scrape-Token": token,
-            },
-            body: JSON.stringify(payload),
-          });
-          const data = await res.json().catch(() => ({}));
-
-          if (res.status === 401) {
-            setStatus(config.card, "error", "Token inválido. Verifica tu clave de acceso.");
-            refreshGenerateButton(sourceKey);
-            return;
-          }
-
-          if (!res.ok) {
-            setStatus(config.card, "error", data.error || "No se pudo generar la actualización.");
-            refreshGenerateButton(sourceKey);
-            return;
-          }
-
-          state.updateAvailable = true;
-          showUpdateDownload(sourceKey, true);
-          setStatus(config.card, "done", config.formatDoneMessage(data));
-        } catch (err) {
-          setStatus(config.card, "error", "Error de conexión: " + err.message);
-        } finally {
-          refreshGenerateButton(sourceKey);
-        }
-      }
-
-      Object.entries(UPDATE_SOURCES).forEach(([sourceKey, config]) => {
-        if (config.baseFileInput) {
-          config.baseFileInput.addEventListener("change", () => {
-            const file = config.baseFileInput.files[0];
-            if (file) uploadBaseFile(sourceKey, file);
-          });
-        }
-        config.masterFileInput.addEventListener("change", () => {
-          const file = config.masterFileInput.files[0];
-          if (file) uploadMasterFile(sourceKey, file);
-        });
-        config.card.querySelector(".generate-update-btn").addEventListener("click", () => {
-          generateUpdate(sourceKey);
-        });
-      });
-
-      refreshAllUpdateStatus();
-
-      function escapeHtml(text) {
-        const div = document.createElement("div");
-        div.textContent = text;
-        return div.innerHTML;
-      }
-
-      function getCardElements(card) {
-        return {
-          runBtn: card.querySelector(".run-btn"),
-          downloadLink: card.querySelector(".download-link"),
-          statusBox: card.querySelector(".status"),
-          statusMessage: card.querySelector(".status-message"),
-        };
-      }
-
-      function setStatus(card, status, message, showSpinner = false) {
-        const statusBox = card.querySelector(".status");
-        const statusMessage = card.querySelector(".status-message");
-        statusBox.className = "status";
-        if (status && status !== "idle") statusBox.classList.add(status);
-        statusMessage.innerHTML = showSpinner
-          ? '<span class="spinner"></span>' + escapeHtml(message)
-          : escapeHtml(message);
-      }
-
-      function setRunning(card, isRunning) {
-        getCardElements(card).runBtn.disabled = isRunning;
-        tokenInput.disabled = scrapePanel.querySelectorAll(".run-btn:disabled").length > 0;
-      }
-
-      function showDownload(card, show) {
-        getCardElements(card).downloadLink.classList.toggle("hidden", !show);
-      }
-
-      async function pollStatus(source, card) {
-        try {
-          const res = await fetch(`/api/${source}/status`);
-          const data = await res.json();
-
-          if (data.status === "running") {
-            setStatus(card, "running", data.message || "En progreso...", true);
-            showDownload(card, false);
-            setRunning(card, true);
-            return;
-          }
-
-          clearInterval(pollTimers[source]);
-          pollTimers[source] = null;
-          setRunning(card, false);
-
-          if (data.status === "done") {
-            setStatus(card, "done", data.message || `Completado: ${data.rows} productos`);
-            showDownload(card, true);
-            if (source === "beautydepot" || source === "solcom") {
-              refreshUpdateStatus(source);
-            }
-          } else if (data.status === "error") {
-            setStatus(card, "error", data.message || "Error desconocido");
-            showDownload(card, false);
-          } else {
-            setStatus(card, "idle", "Listo para ejecutar.");
-            showDownload(card, data.output_path != null);
-            if ((source === "beautydepot" || source === "solcom") && data.output_path != null) {
-              refreshUpdateStatus(source);
-            }
-          }
-        } catch (err) {
-          clearInterval(pollTimers[source]);
-          pollTimers[source] = null;
-          setRunning(card, false);
-          setStatus(card, "error", "Error al consultar el estado: " + err.message);
-        }
-      }
-
-      async function startScrape(source, card) {
-        const token = getToken();
-        setRunning(card, true);
-        showDownload(card, false);
-        setStatus(card, "running", "Iniciando...", true);
-
-        try {
-          const res = await fetch(`/api/${source}/run`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Scrape-Token": token,
-            },
-            body: JSON.stringify({ token }),
-          });
-
-          const data = await res.json().catch(() => ({}));
-
-          if (res.status === 401) {
-            setRunning(card, false);
-            setStatus(card, "error", "Token inválido. Verifica tu clave de acceso.");
-            return;
-          }
-
-          if (res.status === 409) {
-            setStatus(card, "running", data.error || "Ya hay un scrape en ejecución", true);
-          } else if (!res.ok) {
-            setRunning(card, false);
-            setStatus(card, "error", data.error || "No se pudo iniciar el scrape");
-            return;
-          }
-
-          if (pollTimers[source]) clearInterval(pollTimers[source]);
-          pollTimers[source] = setInterval(() => pollStatus(source, card), 2000);
-          pollStatus(source, card);
-        } catch (err) {
-          setRunning(card, false);
-          setStatus(card, "error", "Error de conexión: " + err.message);
-        }
-      }
-
-      scrapePanel.querySelectorAll(".card[data-source]").forEach((card) => {
-        const source = card.dataset.source;
-        card.querySelector(".run-btn").addEventListener("click", () => startScrape(source, card));
-        pollStatus(source, card);
-      });
-    </script>
+    <script src="/static/app.js"></script>
   </body>
 </html>
